@@ -424,7 +424,7 @@ export default function GameplanGenerator() {
               setGenerateError(event.error);
               setGenerating(false);
               return;
-            } else if (event.status === 'generating' || event.status === 'building' || event.status === 'routing_complete') {
+            } else if (event.status === 'generating' || event.status === 'building' || event.status === 'routing_complete' || event.status === 'saving') {
               setProgressMsgs(prev => [...prev, event.message]);
             } else if (event.status === 'done') {
               downloadFile(event.gameplanBase64, `${event.studentName}_Gameplan.pdf`);
@@ -480,7 +480,10 @@ export default function GameplanGenerator() {
           </div>
           <span style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>Gameplan Generator</span>
         </div>
-        <span style={{ color: '#8EA8C3', fontSize: 12 }}>Diagnostic-Driven · SAT</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span style={{ color: '#8EA8C3', fontSize: 12 }}>Diagnostic-Driven · SAT</span>
+          <a href="/gameplans" style={{ color: '#8EA8C3', fontSize: 12, textDecoration: 'none', borderBottom: '1px solid #8EA8C3', paddingBottom: 1 }}>View History</a>
+        </div>
       </div>
 
       {/* Body */}
