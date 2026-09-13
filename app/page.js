@@ -29,6 +29,36 @@ function calcWeeksAndSessions(startDateStr, testDateStr, freq) {
   return { weeks, sessionsAt1x: weeks, sessionsAt2x: weeks * 2, sessionsAt3x: weeks * 3, perWeek };
 }
 
+// Compress image files before upload to stay under Vercel's 4.5MB request limit.
+// PDFs pass through unchanged. Images are resized (max 1600px) and re-encoded as JPEG @ 80%.
+async function compressImage(file) {
+  if (!file || file.type === 'application/pdf') return file;
+  if (!file.type.startsWith('image/')) return file;
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1600;
+      let { naturalWidth: w, naturalHeight: h } = img;
+      if (w > MAX || h > MAX) {
+        const r = Math.min(MAX / w, MAX / h);
+        w = Math.round(w * r);
+        h = Math.round(h * r);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        blob => resolve(new File([blob], file.name.replace(/\.(png|webp|gif)$/i, '.jpg'), { type: 'image/jpeg' })),
+        'image/jpeg', 0.80
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); }; // fallback: use original
+    img.src = url;
+  });
+}
+
 // Estimate sessions needed and recommend a frequency based on target gain + weeks until test
 function getRecommendedFreq(targetGain, weeks) {
   if (!targetGain || !weeks || weeks <= 0) return null;
@@ -302,9 +332,13 @@ export default function GameplanGenerator() {
     setGuaranteeParsed(null);
     setGuaranteeParseError('');
     try {
+      const [compressedScore, ...compressedPortal] = await Promise.all([
+        compressImage(scoreReportFile),
+        ...portalFiles.map(f => compressImage(f)),
+      ]);
       const fd = new FormData();
-      fd.append('scoreReport', scoreReportFile);
-      portalFiles.forEach((f, i) => fd.append(`portalScreenshot_${i}`, f));
+      fd.append('scoreReport', compressedScore);
+      compressedPortal.forEach((f, i) => fd.append(`portalScreenshot_${i}`, f));
       const res = await fetch('/api/parse-guarantee', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok || data.error) { setGuaranteeParseError(data.error || 'Parse failed'); return; }
