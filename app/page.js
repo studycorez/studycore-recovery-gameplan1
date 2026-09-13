@@ -2,6 +2,32 @@
 
 import { useState, useRef, useCallback } from 'react';
 
+// ─── SAT / PSAT test dates ─────────────────────────────────────────────────────
+const SAT_PSAT_DATES = [
+  { value: '2026-08-23', label: 'SAT — Aug 23, 2026' },
+  { value: '2026-10-04', label: 'SAT — Oct 4, 2026' },
+  { value: '2026-10-14', label: 'PSAT — Oct 14, 2026' },
+  { value: '2026-10-29', label: 'PSAT — Oct 29, 2026' },
+  { value: '2026-11-01', label: 'SAT — Nov 1, 2026' },
+  { value: '2026-12-06', label: 'SAT — Dec 6, 2026' },
+  { value: '2027-03-13', label: 'SAT — Mar 13, 2027' },
+  { value: '2027-04-09', label: 'PSAT — Apr 9, 2027' },
+  { value: '2027-05-01', label: 'SAT — May 1, 2027' },
+  { value: '2027-06-07', label: 'SAT — Jun 7, 2027' },
+  { value: '2027-08-23', label: 'SAT — Aug 23, 2027' },
+];
+
+function calcWeeksAndSessions(startDateStr, testDateStr, freq) {
+  if (!testDateStr) return null;
+  const start = startDateStr ? new Date(startDateStr + 'T00:00:00') : new Date();
+  const test  = new Date(testDateStr + 'T00:00:00');
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const weeks = Math.round((test - start) / msPerWeek);
+  if (weeks <= 0) return null;
+  const perWeek = freq === '3x' ? 3 : freq === '2x' ? 2 : 1;
+  return { weeks, sessionsAt1x: weeks, sessionsAt2x: weeks * 2, sessionsAt3x: weeks * 3, perWeek };
+}
+
 // ─── Style constants ───────────────────────────────────────────────────────────
 const NAVY   = '#1B365D';
 const BLUE   = '#2E75B6';
@@ -231,6 +257,8 @@ export default function GameplanGenerator() {
     sessionsCompleted: '',
     programNotes: '',
   });
+
+  const [showCustomDate, setShowCustomDate] = useState(false);
 
   // Step 3 state
   const [generating, setGenerating]   = useState(false);
@@ -491,11 +519,38 @@ export default function GameplanGenerator() {
                   <input name="currentTutor" value={student.currentTutor} onChange={handleStudentChange} style={inp} placeholder="Tutor name" />
                 </Field>
                 <Field label="Target Test Date">
-                  <input type="date" name="targetTestDate" value={student.targetTestDate} onChange={handleStudentChange} style={inp} />
+                  <select
+                    value={showCustomDate ? '__custom__' : (student.targetTestDate || '')}
+                    onChange={e => {
+                      if (e.target.value === '__custom__') {
+                        setShowCustomDate(true);
+                        setStudent(prev => ({ ...prev, targetTestDate: '' }));
+                      } else {
+                        setShowCustomDate(false);
+                        setStudent(prev => ({ ...prev, targetTestDate: e.target.value }));
+                      }
+                    }}
+                    style={inp}
+                  >
+                    <option value="">— Select a test date —</option>
+                    {SAT_PSAT_DATES.map(d => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
+                    <option value="__custom__">Custom date…</option>
+                  </select>
+                  {showCustomDate && (
+                    <input
+                      type="date"
+                      name="targetTestDate"
+                      value={student.targetTestDate}
+                      onChange={handleStudentChange}
+                      style={{ ...inp, marginTop: 6 }}
+                    />
+                  )}
                 </Field>
                 <Field label="Session Frequency">
                   <div style={{ display: 'flex', gap: 8 }}>
-                    {['2x', '1x'].map(freq => (
+                    {['1x', '2x', '3x'].map(freq => (
                       <button
                         key={freq}
                         onClick={() => setStudent(prev => ({ ...prev, sessionFrequency: freq }))}
@@ -511,12 +566,57 @@ export default function GameplanGenerator() {
                           cursor: 'pointer',
                         }}
                       >
-                        {freq === '2x' ? '2× / week' : '1× / week'}
+                        {freq === '3x' ? '3× / week' : freq === '2x' ? '2× / week' : '1× / week'}
                       </button>
                     ))}
                   </div>
                 </Field>
               </div>
+
+              {/* Weeks & pacing recommendation */}
+              {(() => {
+                const calc = calcWeeksAndSessions(student.programStartDate, student.targetTestDate, student.sessionFrequency);
+                if (!calc) return null;
+                const { weeks, sessionsAt1x, sessionsAt2x, sessionsAt3x } = calc;
+                const purchased = parseInt(student.sessionsPurchased) || null;
+                const freqSessions = student.sessionFrequency === '3x' ? sessionsAt3x : student.sessionFrequency === '2x' ? sessionsAt2x : sessionsAt1x;
+                const tight = weeks < 8;
+                const urgent = weeks < 5;
+                const boxColor = urgent ? '#FDEDEC' : tight ? '#FEF3E2' : '#EAFAF1';
+                const borderColor = urgent ? RED : tight ? ORANGE : GREEN;
+                const labelColor = urgent ? RED : tight ? ORANGE : GREEN;
+                return (
+                  <div style={{ marginTop: 12, padding: '12px 14px', backgroundColor: boxColor, border: `1.5px solid ${borderColor}`, borderRadius: 6 }}>
+                    <div style={{ fontWeight: 700, color: labelColor, fontSize: 12, letterSpacing: 0.5, marginBottom: 10, textTransform: 'uppercase' }}>
+                      {urgent ? 'Urgent — Very Short Window' : tight ? 'Tight Timeline' : 'Recommended Pacing'}
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
+                      {[
+                        { label: 'Weeks to Test', value: String(weeks), sub: student.programStartDate ? 'from start date' : 'from today' },
+                        { label: '1× / week', value: String(sessionsAt1x), sub: 'sessions available' },
+                        { label: '2× / week', value: String(sessionsAt2x), sub: 'sessions available' },
+                        { label: '3× / week', value: String(sessionsAt3x), sub: 'sessions available' },
+                      ].map((m, i) => (
+                        <div key={i} style={{ backgroundColor: 'white', borderRadius: 4, padding: '8px 10px', border: `1px solid ${BORDER}` }}>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>{m.label}</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: NAVY }}>{m.value}</div>
+                          <div style={{ fontSize: 10, color: '#888' }}>{m.sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#444' }}>
+                      At <strong>{student.sessionFrequency === '3x' ? '3×' : student.sessionFrequency === '2x' ? '2×' : '1×'}/week</strong> you have <strong>{freqSessions} sessions</strong> before the test.
+                      {purchased && (
+                        <span style={{ marginLeft: 6, color: freqSessions >= purchased ? GREEN : ORANGE }}>
+                          {freqSessions >= purchased
+                            ? `${purchased} purchased sessions fit comfortably.`
+                            : `Only ${freqSessions} of ${purchased} purchased sessions fit at this pace — consider ${student.sessionFrequency === '1x' ? '2×/week' : '3×/week'}.`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Optional fields */}
@@ -525,6 +625,9 @@ export default function GameplanGenerator() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
                 <Field label="Grade">
                   <input name="grade" value={student.grade} onChange={handleStudentChange} style={inp} placeholder="e.g. 11" />
+                </Field>
+                <Field label="Program Start Date" hint="Used to calculate weeks to test">
+                  <input type="date" name="programStartDate" value={student.programStartDate} onChange={handleStudentChange} style={inp} />
                 </Field>
                 <Field label="Sessions Purchased">
                   <input type="number" name="sessionsPurchased" value={student.sessionsPurchased} onChange={handleStudentChange} style={inp} placeholder="e.g. 20" />
