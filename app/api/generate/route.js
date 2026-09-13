@@ -5,6 +5,35 @@ import { buildStudentPlanPdf } from '../../../lib/pdf-student-plan';
 import { createStudentTracker } from '../../../lib/google-sheets';
 import { generateGameplanNarratives } from '../../../lib/gameplan-rules';
 
+const BAND_MASTERY = {
+  'Below 400': 22, '400\u2013450': 33, '450\u2013500': 44, '490\u2013540': 50,
+  '500\u2013550': 56, '550\u2013600': 63, '610\u2013670': 72, '680\u2013760': 82, '680\u2013800': 88,
+};
+const DOMAIN_PLATFORM_TOPICS = {
+  cs:   ['Words in context','Text structure and purpose','Cross-text connections','Part-to-whole relationships'],
+  ii:   ['Central ideas and details','Command of Evidence - Textual','Command of Evidence - Quantitative','Inferences'],
+  eoi:  ['Rhetorical Synthesis','Transitions'],
+  sec:  ['Boundaries','Subject-verb agreement','Pronoun-antecedent agreement','Plural & Possessives'],
+  alg:  ['Linear equations in one variable','Linear Equation (Word Problems)','Linear equations in two variables','Systems of two linear equations in two variables','Linear inequalities in one or two variables'],
+  am:   ['Nonlinear equations','Quadratic equations','Nonlinear functions','Equivalent expressions','Exponents & Radicals'],
+  psda: ['Ratios, Rates, And Proportions','Percentages','Probability','Calculating Mean','Two-variable data - scatter plots'],
+  gt:   ['Right Triangle Geometry','Lines, angles, and triangles','Circle Theorems','Area'],
+};
+function normBand(b) { return b ? b.replace(/[-\u2013]/g,'\u2013').trim() : null; }
+function inferDiagnosticFromBands(domains, coveredTopics = []) {
+  const entries = [];
+  const covered = new Set((coveredTopics||[]).map(t=>t.toLowerCase()));
+  for (const [key, bandStr] of Object.entries(domains||{})) {
+    const topics = DOMAIN_PLATFORM_TOPICS[key]; if(!topics) continue;
+    const mastery = BAND_MASTERY[normBand(bandStr)] ?? 50;
+    for (const platformName of topics) {
+      const isCovered = covered.has(platformName.toLowerCase());
+      entries.push({ platformName, qs: 4, mastery: isCovered ? Math.max(mastery, 78) : mastery, avgTimeSecs: 80 });
+    }
+  }
+  return entries;
+}
+
 export const maxDuration = 120;
 
 export async function POST(request) {
@@ -20,17 +49,27 @@ export async function POST(request) {
         try { body = await request.json(); }
         catch { line(controller, { status: 'error', error: 'Invalid request body.' }); return; }
 
-        const { studentData, diagnosticEntries } = body;
+        const { studentData, diagnosticEntries: rawEntries, guaranteeMode } = body;
+        let diagnosticEntries = rawEntries;
 
         const missing = [];
         if (!studentData?.studentName) missing.push('studentName');
         if (!studentData?.baselineScore) missing.push('baselineScore');
         if (!studentData?.targetScore) missing.push('targetScore');
-        if (!diagnosticEntries || diagnosticEntries.length === 0) missing.push('diagnosticEntries');
+        if (!guaranteeMode || !studentData?.guaranteeDomains) {
+          if (!diagnosticEntries || diagnosticEntries.length === 0) missing.push('diagnosticEntries');
+        }
         if (missing.length > 0) {
           line(controller, { status: 'error', error: `Missing required fields: ${missing.join(', ')}` });
           return;
         }
+
+        if (guaranteeMode && (!diagnosticEntries || diagnosticEntries.length === 0)) {
+          diagnosticEntries = inferDiagnosticFromBands(studentData.guaranteeDomains, studentData.coveredTopics || []);
+        }
+
+        // Propagate guaranteeMode into studentData for PDF builders
+        if (guaranteeMode) studentData = { ...studentData, guaranteeMode: true };
 
         // Step 1: Routing engine
         line(controller, { status: 'generating', message: 'Computing topic sequence from diagnostic…' });

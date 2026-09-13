@@ -260,6 +260,14 @@ export default function GameplanGenerator() {
 
   const [showCustomDate, setShowCustomDate] = useState(false);
 
+  // Guarantee mode state
+  const [mode, setMode] = useState('new'); // 'new' | 'guarantee'
+  const [scoreReportFile, setScoreReportFile] = useState(null);
+  const [portalFiles, setPortalFiles] = useState([]);
+  const [guaranteeParsing, setGuaranteeParsing] = useState(false);
+  const [guaranteeParsed, setGuaranteeParsed] = useState(null);
+  const [guaranteeParseError, setGuaranteeParseError] = useState('');
+
   // Step 3 state
   const [generating, setGenerating]   = useState(false);
   const [progressMsgs, setProgressMsgs] = useState([]);
@@ -269,6 +277,36 @@ export default function GameplanGenerator() {
   const handleStudentChange = e => {
     const { name, value } = e.target;
     setStudent(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGuaranteeParse = async () => {
+    if (!scoreReportFile) return;
+    setGuaranteeParsing(true);
+    setGuaranteeParsed(null);
+    setGuaranteeParseError('');
+    try {
+      const fd = new FormData();
+      fd.append('scoreReport', scoreReportFile);
+      portalFiles.forEach((f, i) => fd.append(`portalScreenshot_${i}`, f));
+      const res = await fetch('/api/parse-guarantee', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok || data.error) { setGuaranteeParseError(data.error || 'Parse failed'); return; }
+      setGuaranteeParsed(data);
+      // Pre-fill student form from score report
+      const sr = data.scoreReport || {};
+      setStudent(prev => ({
+        ...prev,
+        studentName: sr.studentName || prev.studentName,
+        baselineScore: sr.totalScore != null ? String(sr.totalScore) : prev.baselineScore,
+        rwScore: sr.rwScore != null ? String(sr.rwScore) : prev.rwScore,
+        mathScore: sr.mathScore != null ? String(sr.mathScore) : prev.mathScore,
+        sessionsCompleted: data.portal?.sessionsCompleted != null ? String(data.portal.sessionsCompleted) : prev.sessionsCompleted,
+      }));
+    } catch (err) {
+      setGuaranteeParseError(err.message);
+    } finally {
+      setGuaranteeParsing(false);
+    }
   };
 
   // ── Step 1: Upload + parse ────────────────────────────────────────────────
@@ -331,8 +369,15 @@ export default function GameplanGenerator() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentData: student,
-          diagnosticEntries: parsed.diagnosticEntries,
+          studentData: {
+            ...student,
+            ...(mode === 'guarantee' && guaranteeParsed?.scoreReport?.domains ? {
+              guaranteeDomains: guaranteeParsed.scoreReport.domains,
+              coveredTopics: guaranteeParsed.portal?.topicsCovered || [],
+            } : {}),
+          },
+          diagnosticEntries: mode === 'guarantee' ? null : parsed?.diagnosticEntries,
+          guaranteeMode: mode === 'guarantee',
         }),
       });
 
@@ -388,7 +433,7 @@ export default function GameplanGenerator() {
     }
   };
 
-  const canAdvanceStep1 = parsed && !parsing;
+  const canAdvanceStep1 = mode === 'guarantee' ? (guaranteeParsed && !guaranteeParsing) : (parsed && !parsing);
   const canAdvanceStep2 = student.studentName.trim() && student.baselineScore && student.targetScore;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -424,52 +469,234 @@ export default function GameplanGenerator() {
       {/* Body */}
       <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 16px' }}>
 
+        {/* Mode toggle */}
+        <div style={{ display: 'flex', gap: 0, marginBottom: 16, border: `1px solid ${BORDER}`, borderRadius: 6, overflow: 'hidden' }}>
+          {[
+            { key: 'new', label: 'New Student', icon: '📋' },
+            { key: 'guarantee', label: 'Guarantee Recovery', icon: '🔄' },
+          ].map(m => (
+            <button key={m.key} onClick={() => { setMode(m.key); setStep(1); setParsed(null); setGuaranteeParsed(null); setResult(null); }}
+              style={{ flex: 1, padding: '10px 16px', border: 'none', backgroundColor: mode === m.key ? NAVY : 'white',
+                color: mode === m.key ? 'white' : '#555', fontWeight: mode === m.key ? 700 : 400, fontSize: 13, cursor: 'pointer' }}>
+              {m.icon} {m.label}
+            </button>
+          ))}
+        </div>
+
         <StepBar step={step} />
 
         {/* ── STEP 1: Upload & Parse ──────────────────────────────────── */}
         {step === 1 && (
           <Card>
-            <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
-              Upload Diagnostic PDF
-            </div>
-            <div style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
-              Upload the StudyCore SAT diagnostic report. Claude will extract all topic data automatically.
-            </div>
-
-            <UploadZone onFile={handleFile} disabled={parsing} />
-
-            {parsing && (
-              <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#EAF3FB', borderRadius: 4, fontSize: 13, color: BLUE, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>⏳</span> Parsing PDF with Claude…
-              </div>
-            )}
-
-            {parseError && (
-              <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#FDEDEC', borderRadius: 4, color: RED, fontSize: 13 }}>
-                <strong>Parse error:</strong> {parseError}
-                <div style={{ marginTop: 6, fontSize: 12, color: '#888' }}>
-                  Check that the file is a valid StudyCore diagnostic PDF and that ANTHROPIC_API_KEY is set.
+            {mode === 'new' && (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
+                  Upload Diagnostic PDF
                 </div>
-              </div>
+                <div style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
+                  Upload the StudyCore SAT diagnostic report. Claude will extract all topic data automatically.
+                </div>
+
+                <UploadZone onFile={handleFile} disabled={parsing} />
+
+                {parsing && (
+                  <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#EAF3FB', borderRadius: 4, fontSize: 13, color: BLUE, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>⏳</span> Parsing PDF with Claude…
+                  </div>
+                )}
+
+                {parseError && (
+                  <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#FDEDEC', borderRadius: 4, color: RED, fontSize: 13 }}>
+                    <strong>Parse error:</strong> {parseError}
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#888' }}>
+                      Check that the file is a valid StudyCore diagnostic PDF and that ANTHROPIC_API_KEY is set.
+                    </div>
+                  </div>
+                )}
+
+                {pdfFile && !parsing && !parseError && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: '#888' }}>
+                    File: <strong>{pdfFile.name}</strong>
+                  </div>
+                )}
+
+                <ParsedPreview parsed={parsed} />
+
+                <div style={{ marginTop: 20, textAlign: 'right' }}>
+                  <button
+                    style={btn(NAVY, !canAdvanceStep1)}
+                    disabled={!canAdvanceStep1}
+                    onClick={() => setStep(2)}
+                  >
+                    Next: Program Details →
+                  </button>
+                </div>
+              </>
             )}
 
-            {pdfFile && !parsing && !parseError && (
-              <div style={{ marginTop: 10, fontSize: 12, color: '#888' }}>
-                File: <strong>{pdfFile.name}</strong>
-              </div>
+            {mode === 'guarantee' && (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
+                  Upload Score Report & Portal
+                </div>
+                <div style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
+                  Upload the student's official SAT score report and optionally their StudyCore portal screenshot.
+                </div>
+
+                {/* Score Report upload */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#222', marginBottom: 6 }}>
+                    Score Report <span style={{ color: RED }}>*</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Image (JPG/PNG/WEBP) or PDF</div>
+                  <div
+                    onClick={() => document.getElementById('sr-upload').click()}
+                    style={{
+                      border: `2px dashed ${scoreReportFile ? GREEN : BORDER}`,
+                      borderRadius: 8,
+                      padding: '28px 24px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      backgroundColor: scoreReportFile ? '#EAFAF1' : '#FAFBFD',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>{scoreReportFile ? '✅' : '📄'}</div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: scoreReportFile ? GREEN : NAVY, marginBottom: 4 }}>
+                      {scoreReportFile ? scoreReportFile.name : 'Click to upload score report'}
+                    </div>
+                    {!scoreReportFile && <div style={{ fontSize: 11, color: '#888' }}>Official SAT score report</div>}
+                    <input
+                      id="sr-upload"
+                      type="file"
+                      accept="image/*,application/pdf"
+                      style={{ display: 'none' }}
+                      onChange={e => { const f = e.target.files[0]; if (f) setScoreReportFile(f); }}
+                    />
+                  </div>
+                </div>
+
+                {/* Portal screenshots upload */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: '#222', marginBottom: 6 }}>
+                    StudyCore Portal Screenshots <span style={{ fontSize: 11, color: '#888', fontWeight: 400 }}>(optional, up to 3)</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Shows topics covered and sessions completed</div>
+                  <div
+                    onClick={() => document.getElementById('portal-upload').click()}
+                    style={{
+                      border: `2px dashed ${portalFiles.length > 0 ? BLUE : BORDER}`,
+                      borderRadius: 8,
+                      padding: '20px 24px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      backgroundColor: portalFiles.length > 0 ? '#EAF3FB' : '#FAFBFD',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ fontSize: 22, marginBottom: 6 }}>{portalFiles.length > 0 ? '🖼️' : '📸'}</div>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: portalFiles.length > 0 ? BLUE : '#777', marginBottom: 2 }}>
+                      {portalFiles.length > 0 ? `${portalFiles.length} screenshot${portalFiles.length > 1 ? 's' : ''} selected` : 'Click to upload portal screenshots'}
+                    </div>
+                    {portalFiles.length > 0 && (
+                      <div style={{ fontSize: 11, color: '#888' }}>
+                        {portalFiles.map(f => f.name).join(', ')}
+                      </div>
+                    )}
+                    <input
+                      id="portal-upload"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      style={{ display: 'none' }}
+                      onChange={e => {
+                        const files = Array.from(e.target.files).slice(0, 3);
+                        setPortalFiles(files);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Parse button */}
+                <div style={{ marginBottom: 12 }}>
+                  <button
+                    style={btn(BLUE, !scoreReportFile || guaranteeParsing)}
+                    disabled={!scoreReportFile || guaranteeParsing}
+                    onClick={handleGuaranteeParse}
+                  >
+                    {guaranteeParsing ? '⏳ Parsing Documents…' : 'Parse Documents'}
+                  </button>
+                </div>
+
+                {/* Error */}
+                {guaranteeParseError && (
+                  <div style={{ padding: '10px 14px', backgroundColor: '#FDEDEC', borderRadius: 4, color: RED, fontSize: 13, marginBottom: 12 }}>
+                    <strong>Parse error:</strong> {guaranteeParseError}
+                  </div>
+                )}
+
+                {/* Parsed result display */}
+                {guaranteeParsed && (
+                  <div style={{ backgroundColor: '#EAFAF1', border: `1px solid ${GREEN}`, borderRadius: 6, padding: 16, marginBottom: 12 }}>
+                    <div style={{ fontWeight: 700, color: GREEN, fontSize: 14, marginBottom: 10 }}>
+                      Documents parsed successfully
+                    </div>
+                    {/* Scores */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+                      {[
+                        { label: 'Total Score', value: guaranteeParsed.scoreReport?.totalScore ?? '—' },
+                        { label: 'R&W', value: guaranteeParsed.scoreReport?.rwScore ?? '—' },
+                        { label: 'Math', value: guaranteeParsed.scoreReport?.mathScore ?? '—' },
+                        { label: 'Student', value: guaranteeParsed.scoreReport?.studentName || '—' },
+                        { label: 'Test Date', value: guaranteeParsed.scoreReport?.testDate || '—' },
+                        { label: 'Topics Covered', value: guaranteeParsed.portal?.topicsCovered?.length ? `${guaranteeParsed.portal.topicsCovered.length} topics` : '—' },
+                      ].map((c, i) => (
+                        <div key={i}>
+                          <div style={{ fontSize: 10, color: '#888', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>{c.label}</div>
+                          <div style={{ fontWeight: 700, color: NAVY, fontSize: 13 }}>{c.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Domain bands */}
+                    {guaranteeParsed.scoreReport?.domains && (
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Domain Bands</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {Object.entries(guaranteeParsed.scoreReport.domains).map(([key, band]) => {
+                            if (!band || band === 'N/A') return null;
+                            const DOMAIN_LABELS = { cs:'Craft & Struct', ii:'Info & Ideas', eoi:'Expression', sec:'Conventions', alg:'Algebra', am:'Adv Math', psda:'Data Analysis', gt:'Geometry' };
+                            const lowBands = ['Below 400','400\u2013450','450\u2013500','490\u2013540','500\u2013550'];
+                            const isLow = lowBands.includes(band);
+                            return (
+                              <div key={key} style={{
+                                backgroundColor: isLow ? '#FDEDEC' : '#EAFAF1',
+                                border: `1px solid ${isLow ? RED : GREEN}`,
+                                borderRadius: 4,
+                                padding: '3px 8px',
+                                fontSize: 11,
+                              }}>
+                                <span style={{ fontWeight: 700, color: isLow ? RED : GREEN }}>{DOMAIN_LABELS[key] || key}</span>
+                                <span style={{ color: '#555', marginLeft: 4 }}>{band}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 20, textAlign: 'right' }}>
+                  <button
+                    style={btn(NAVY, !canAdvanceStep1)}
+                    disabled={!canAdvanceStep1}
+                    onClick={() => setStep(2)}
+                  >
+                    Next: Program Details →
+                  </button>
+                </div>
+              </>
             )}
-
-            <ParsedPreview parsed={parsed} />
-
-            <div style={{ marginTop: 20, textAlign: 'right' }}>
-              <button
-                style={btn(NAVY, !canAdvanceStep1)}
-                disabled={!canAdvanceStep1}
-                onClick={() => setStep(2)}
-              >
-                Next: Program Details →
-              </button>
-            </div>
           </Card>
         )}
 
@@ -479,8 +706,15 @@ export default function GameplanGenerator() {
             <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
               Program Details
             </div>
+            {mode === 'guarantee' && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: '#EAFAF1', border: `1px solid ${GREEN}`, borderRadius: 4, padding: '4px 10px', marginBottom: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: GREEN }}>GUARANTEE RECOVERY — FREE SESSIONS</span>
+              </div>
+            )}
             <div style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
-              Fields pre-filled from the diagnostic. Review and complete before generating.
+              {mode === 'guarantee'
+                ? 'Student did not hit target. Free sessions activated. New score is the new baseline.'
+                : 'Fields pre-filled from the diagnostic. Review and complete before generating.'}
             </div>
 
             {/* Scores row */}
@@ -683,7 +917,9 @@ export default function GameplanGenerator() {
                 ))}
               </div>
               <div style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
-                {parsed?.diagnosticEntries?.length || 0} diagnostic topics parsed from PDF
+                {mode === 'guarantee'
+                  ? `Guarantee recovery — domain bands inferred from score report${guaranteeParsed?.portal?.topicsCovered?.length ? ` · ${guaranteeParsed.portal.topicsCovered.length} topics covered` : ''}`
+                  : `${parsed?.diagnosticEntries?.length || 0} diagnostic topics parsed from PDF`}
               </div>
             </div>
 
