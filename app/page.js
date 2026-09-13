@@ -575,19 +575,21 @@ export default function GameplanGenerator() {
                   </div>
                 </div>
 
-                {/* Portal screenshots upload */}
+                {/* Platform report upload */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontWeight: 600, fontSize: 13, color: '#222', marginBottom: 6 }}>
-                    StudyCore Portal Screenshots <span style={{ fontSize: 11, color: '#888', fontWeight: 400 }}>(optional, up to 3)</span>
+                    StudyCore Platform Report <span style={{ fontSize: 11, color: '#888', fontWeight: 400 }}>(optional, up to 3 PDFs)</span>
                   </div>
-                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Shows topics covered and sessions completed</div>
+                  <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Latest test score report from the StudyCore platform — shows topics covered and performance</div>
                   <div
                     onClick={() => portalInputRef.current?.click()}
                     onDragOver={e => { e.preventDefault(); setPortalDrag(true); }}
                     onDragLeave={() => setPortalDrag(false)}
                     onDrop={e => {
                       e.preventDefault(); setPortalDrag(false);
-                      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).slice(0, 3);
+                      const files = Array.from(e.dataTransfer.files)
+                        .filter(f => f.type === 'application/pdf' || f.type.startsWith('image/'))
+                        .slice(0, 3);
                       if (files.length) setPortalFiles(files);
                     }}
                     style={{
@@ -597,14 +599,15 @@ export default function GameplanGenerator() {
                       transition: 'all 0.15s',
                     }}
                   >
-                    <div style={{ fontSize: 22, marginBottom: 6 }}>{portalFiles.length > 0 ? '🖼️' : '📸'}</div>
+                    <div style={{ fontSize: 22, marginBottom: 6 }}>{portalFiles.length > 0 ? '✅' : '📊'}</div>
                     <div style={{ fontWeight: 600, fontSize: 13, color: portalFiles.length > 0 ? BLUE : '#777', marginBottom: 2 }}>
-                      {portalFiles.length > 0 ? `${portalFiles.length} screenshot${portalFiles.length > 1 ? 's' : ''} selected` : portalDrag ? 'Drop screenshots here' : 'Drop here or click to browse'}
+                      {portalFiles.length > 0 ? `${portalFiles.length} file${portalFiles.length > 1 ? 's' : ''} selected` : portalDrag ? 'Drop report here' : 'Drop here or click to browse'}
                     </div>
-                    {portalFiles.length > 0 && (
-                      <div style={{ fontSize: 11, color: '#888' }}>{portalFiles.map(f => f.name).join(', ')}</div>
-                    )}
-                    <input ref={portalInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+                    {portalFiles.length > 0
+                      ? <div style={{ fontSize: 11, color: '#888' }}>{portalFiles.map(f => f.name).join(', ')}</div>
+                      : <div style={{ fontSize: 11, color: '#888' }}>PDF or image</div>
+                    }
+                    <input ref={portalInputRef} type="file" accept="application/pdf,image/*" multiple style={{ display: 'none' }}
                       onChange={e => setPortalFiles(Array.from(e.target.files).slice(0, 3))} />
                   </div>
                 </div>

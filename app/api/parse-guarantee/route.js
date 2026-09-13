@@ -34,20 +34,27 @@ export async function POST(request) {
       };
     }
 
-    // Collect portal screenshot files
+    // Collect portal files (PDF or image, up to 3)
     const portalBlocks = [];
     for (let i = 0; i < 3; i++) {
       const pf = formData.get(`portalScreenshot_${i}`);
       if (!pf) continue;
       const pBuffer = await pf.arrayBuffer();
       const pBase64 = Buffer.from(pBuffer).toString('base64');
-      const pMime = pf.type || 'image/jpeg';
-      const pMediaType = ['image/jpeg','image/png','image/webp','image/gif'].includes(pMime)
-        ? pMime : 'image/jpeg';
-      portalBlocks.push({
-        type: 'image',
-        source: { type: 'base64', media_type: pMediaType, data: pBase64 },
-      });
+      const pMime = pf.type || 'application/pdf';
+      if (pMime === 'application/pdf') {
+        portalBlocks.push({
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: pBase64 },
+        });
+      } else {
+        const pMediaType = ['image/jpeg','image/png','image/webp','image/gif'].includes(pMime)
+          ? pMime : 'image/jpeg';
+        portalBlocks.push({
+          type: 'image',
+          source: { type: 'base64', media_type: pMediaType, data: pBase64 },
+        });
+      }
     }
 
     const hasPortal = portalBlocks.length > 0;
@@ -113,13 +120,13 @@ testDate: extract the date if visible (e.g. "March 2025"), else null.`,
             ...portalBlocks,
             {
               type: 'text',
-              text: `These are screenshots from a StudyCore student portal. Extract the following and return ONLY valid JSON, no explanation:
+              text: `This is a StudyCore platform report showing a student's test scores and topic performance. Extract the following and return ONLY valid JSON, no explanation:
 {
   "topicsCovered": ["array of topic name strings that the student has completed or studied"],
   "sessionsCompleted": number or null
 }
 
-For topicsCovered, list the exact topic names shown as completed/covered in the portal.
+For topicsCovered, list the exact topic names shown as completed, mastered, or studied in the report.
 For sessionsCompleted, extract the number of sessions the student has completed if shown, else null.`,
             }
           ]
