@@ -4,7 +4,6 @@ import { buildInternalPlanPdf } from '../../../lib/pdf-internal-plan';
 import { buildStudentPlanPdf } from '../../../lib/pdf-student-plan';
 import { createStudentTracker } from '../../../lib/google-sheets';
 import { generateGameplanNarratives } from '../../../lib/gameplan-rules';
-import { put } from '@vercel/blob';
 import { saveGameplan } from '../../../lib/db';
 
 const BAND_MASTERY = {
@@ -116,29 +115,19 @@ export async function POST(request) {
           console.warn('[generate] Tracker creation failed:', err?.message);
         }
 
-        // Step 4b: Upload PDFs to Vercel Blob + save metadata to DB
+        // Step 4b: Save metadata to history DB
         line(controller, { status: 'saving', message: 'Saving to history…' });
         try {
-          const safeName = (studentData.studentName || 'student').replace(/\s+/g, '-');
-          const ts = Date.now();
-          const [gameplanBlob, internalBlob, studentBlob] = await Promise.all([
-            put(`gameplans/${safeName}-${ts}-gameplan.pdf`,  gameplanBuffer,  { access: 'public', contentType: 'application/pdf' }),
-            put(`gameplans/${safeName}-${ts}-internal.pdf`,  internalBuffer,  { access: 'public', contentType: 'application/pdf' }),
-            put(`gameplans/${safeName}-${ts}-student.pdf`,   studentBuffer,   { access: 'public', contentType: 'application/pdf' }),
-          ]);
           await saveGameplan({
-            studentName:     studentData.studentName,
-            tutorName:       studentData.currentTutor || null,
-            baselineScore:   parseInt(studentData.baselineScore),
-            targetScore:     parseInt(studentData.targetScore),
-            targetTestDate:  studentData.targetTestDate || null,
+            studentName:      studentData.studentName,
+            tutorName:        studentData.currentTutor || null,
+            baselineScore:    parseInt(studentData.baselineScore),
+            targetScore:      parseInt(studentData.targetScore),
+            targetTestDate:   studentData.targetTestDate || null,
             sessionFrequency: studentData.sessionFrequency || '2x',
-            guaranteeMode:   !!studentData.guaranteeMode,
-            programSummary:  routingResult.programSummary,
-            gameplanPdfUrl:  gameplanBlob.url,
-            internalPdfUrl:  internalBlob.url,
-            studentPdfUrl:   studentBlob.url,
-            trackerUrl:      trackerUrl || null,
+            guaranteeMode:    !!studentData.guaranteeMode,
+            programSummary:   routingResult.programSummary,
+            trackerUrl:       trackerUrl || null,
           });
         } catch (err) {
           console.warn('[generate] History save failed:', err?.message);

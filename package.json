@@ -12,6 +12,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
     "@react-pdf/renderer": "^3.4.0",
+    "@supabase/supabase-js": "^2.116.0",
     "@vercel/blob": "^2.8.0",
     "@vercel/postgres": "^0.10.0",
     "googleapis": "^180.0.0",
