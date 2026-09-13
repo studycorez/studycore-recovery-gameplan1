@@ -34,11 +34,11 @@ export async function POST(request) {
       };
     }
 
-    // Collect portal files (PDF or image, up to 3)
+    // Collect all portal files (PDF or image, no cap)
     const portalBlocks = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; ; i++) {
       const pf = formData.get(`portalScreenshot_${i}`);
-      if (!pf) continue;
+      if (!pf) break; // stop when no more files
       const pBuffer = await pf.arrayBuffer();
       const pBase64 = Buffer.from(pBuffer).toString('base64');
       const pMime = pf.type || 'application/pdf';
