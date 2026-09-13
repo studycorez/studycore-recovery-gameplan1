@@ -49,7 +49,7 @@ export async function POST(request) {
         try { body = await request.json(); }
         catch { line(controller, { status: 'error', error: 'Invalid request body.' }); return; }
 
-        const { studentData, diagnosticEntries: rawEntries, guaranteeMode } = body;
+        let { studentData, diagnosticEntries: rawEntries, guaranteeMode } = body;
         let diagnosticEntries = rawEntries;
 
         const missing = [];
