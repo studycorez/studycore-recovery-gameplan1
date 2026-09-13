@@ -4,17 +4,18 @@ import { useState, useRef, useCallback } from 'react';
 
 // ─── SAT / PSAT test dates ─────────────────────────────────────────────────────
 const SAT_PSAT_DATES = [
-  { value: '2026-08-23', label: 'SAT — Aug 23, 2026' },
-  { value: '2026-10-04', label: 'SAT — Oct 4, 2026' },
-  { value: '2026-10-14', label: 'PSAT — Oct 14, 2026' },
-  { value: '2026-10-29', label: 'PSAT — Oct 29, 2026' },
-  { value: '2026-11-01', label: 'SAT — Nov 1, 2026' },
-  { value: '2026-12-06', label: 'SAT — Dec 6, 2026' },
-  { value: '2027-03-13', label: 'SAT — Mar 13, 2027' },
-  { value: '2027-04-09', label: 'PSAT — Apr 9, 2027' },
+  { value: '2026-10-03', label: 'SAT — Oct 3, 2026' },
+  { value: '2026-10-17', label: 'PSAT/NMSQT — Oct 17, 2026' },
+  { value: '2026-11-07', label: 'SAT — Nov 7, 2026' },
+  { value: '2026-12-05', label: 'SAT — Dec 5, 2026' },
+  { value: '2027-03-06', label: 'SAT — Mar 6, 2027' },
   { value: '2027-05-01', label: 'SAT — May 1, 2027' },
-  { value: '2027-06-07', label: 'SAT — Jun 7, 2027' },
-  { value: '2027-08-23', label: 'SAT — Aug 23, 2027' },
+  { value: '2027-06-05', label: 'SAT — Jun 5, 2027' },
+  { value: '2027-08-28', label: 'SAT — Aug 28, 2027' },
+  { value: '2027-09-18', label: 'SAT — Sep 18, 2027' },
+  { value: '2027-10-02', label: 'SAT — Oct 2, 2027' },
+  { value: '2027-11-06', label: 'SAT — Nov 6, 2027' },
+  { value: '2027-12-04', label: 'SAT — Dec 4, 2027' },
 ];
 
 function calcWeeksAndSessions(startDateStr, testDateStr, freq) {
