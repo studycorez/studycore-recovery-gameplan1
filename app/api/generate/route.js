@@ -78,6 +78,8 @@ export async function POST(request) {
           targetScore:      parseInt(studentData.targetScore, 10),
           sessionFrequency: studentData.sessionFrequency || '2x',
           blanks:           parseInt(studentData.blanks || 0, 10),
+          targetTestDate:   studentData.targetTestDate || null,
+          programStartDate: studentData.programStartDate || null,
         });
         line(controller, {
           status: 'routing_complete',
