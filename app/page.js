@@ -29,6 +29,18 @@ function calcWeeksAndSessions(startDateStr, testDateStr, freq) {
   return { weeks, sessionsAt1x: weeks, sessionsAt2x: weeks * 2, sessionsAt3x: weeks * 3, perWeek };
 }
 
+// Estimate sessions needed and recommend a frequency based on target gain + weeks until test
+function getRecommendedFreq(targetGain, weeks) {
+  if (!targetGain || !weeks || weeks <= 0) return null;
+  // Rough estimate: each 10-pt gain needs ~1 topic; each topic = 2 phases + 0.43 overhead = ~2.86 sessions
+  const topicsEst   = Math.ceil(targetGain / 10 / 0.5 / 3); // misses needed / conversion / avg misses per topic
+  const sessionsEst = Math.ceil(topicsEst * 2 * 1.43);
+  const ratio = sessionsEst / weeks;
+  const freq  = ratio > 2.5 ? '3x' : ratio > 1.5 ? '2x' : '1x';
+  const sessLabel = freq === '3x' ? weeks * 3 : freq === '2x' ? weeks * 2 : weeks;
+  return { freq, sessionsEst, sessLabel, topicsEst };
+}
+
 // ─── Style constants ───────────────────────────────────────────────────────────
 const NAVY   = '#1B365D';
 const BLUE   = '#2E75B6';
@@ -814,10 +826,15 @@ export default function GameplanGenerator() {
                 const boxColor = urgent ? '#FDEDEC' : tight ? '#FEF3E2' : '#EAFAF1';
                 const borderColor = urgent ? RED : tight ? ORANGE : GREEN;
                 const labelColor = urgent ? RED : tight ? ORANGE : GREEN;
+
+                const targetGain = parseInt(student.targetScore) - parseInt(student.baselineScore);
+                const rec = (!isNaN(targetGain) && targetGain > 0) ? getRecommendedFreq(targetGain, weeks) : null;
+                const isApplied = rec && student.sessionFrequency === rec.freq;
+
                 return (
                   <div style={{ marginTop: 12, padding: '12px 14px', backgroundColor: boxColor, border: `1.5px solid ${borderColor}`, borderRadius: 6 }}>
                     <div style={{ fontWeight: 700, color: labelColor, fontSize: 12, letterSpacing: 0.5, marginBottom: 10, textTransform: 'uppercase' }}>
-                      {urgent ? 'Urgent — Very Short Window' : tight ? 'Tight Timeline' : 'Recommended Pacing'}
+                      {urgent ? 'Urgent — Very Short Window' : tight ? 'Tight Timeline' : 'Pacing Overview'}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
                       {[
@@ -833,6 +850,47 @@ export default function GameplanGenerator() {
                         </div>
                       ))}
                     </div>
+
+                    {/* Recommended plan box */}
+                    {rec && (
+                      <div style={{ backgroundColor: 'white', border: `1.5px solid ${BLUE}`, borderRadius: 5, padding: '10px 12px', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: BLUE, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                            Recommended Plan
+                          </div>
+                          <div style={{ fontSize: 12, color: '#222' }}>
+                            <strong>{rec.freq === '3x' ? '3×' : rec.freq === '2x' ? '2×' : '1×'}/week</strong>
+                            {' — '}~{rec.sessionsEst} sessions estimated for a +{targetGain} pt gain
+                            {rec.freq === '3x' ? ` (${sessionsAt3x} available — fits the program)` : rec.freq === '2x' ? ` (${sessionsAt2x} available)` : ` (${sessionsAt1x} available)`}
+                          </div>
+                          <div style={{ fontSize: 11, color: '#777', marginTop: 3 }}>
+                            {rec.freq === '3x'
+                              ? `Short timeline — 3 sessions/week is the minimum to cover all required topics before the test.`
+                              : rec.freq === '2x'
+                              ? `Standard pace — 2 sessions/week comfortably covers the program in this timeframe.`
+                              : `Relaxed pace — 1 session/week is sufficient with this much time available.`}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setStudent(prev => ({ ...prev, sessionFrequency: rec.freq }))}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: isApplied ? GREEN : BLUE,
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isApplied ? 'Applied' : 'Use this plan'}
+                        </button>
+                      </div>
+                    )}
+
                     <div style={{ fontSize: 12, color: '#444' }}>
                       At <strong>{student.sessionFrequency === '3x' ? '3×' : student.sessionFrequency === '2x' ? '2×' : '1×'}/week</strong> you have <strong>{freqSessions} sessions</strong> before the test.
                       {purchased && (
