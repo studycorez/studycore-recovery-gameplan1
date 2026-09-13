@@ -267,6 +267,10 @@ export default function GameplanGenerator() {
   const [guaranteeParsing, setGuaranteeParsing] = useState(false);
   const [guaranteeParsed, setGuaranteeParsed] = useState(null);
   const [guaranteeParseError, setGuaranteeParseError] = useState('');
+  const [srDrag, setSrDrag] = useState(false);
+  const [portalDrag, setPortalDrag] = useState(false);
+  const srInputRef = useRef();
+  const portalInputRef = useRef();
 
   // Step 3 state
   const [generating, setGenerating]   = useState(false);
@@ -550,29 +554,24 @@ export default function GameplanGenerator() {
                   </div>
                   <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Image (JPG/PNG/WEBP) or PDF</div>
                   <div
-                    onClick={() => document.getElementById('sr-upload').click()}
+                    onClick={() => srInputRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); setSrDrag(true); }}
+                    onDragLeave={() => setSrDrag(false)}
+                    onDrop={e => { e.preventDefault(); setSrDrag(false); const f = e.dataTransfer.files[0]; if (f) setScoreReportFile(f); }}
                     style={{
-                      border: `2px dashed ${scoreReportFile ? GREEN : BORDER}`,
-                      borderRadius: 8,
-                      padding: '28px 24px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      backgroundColor: scoreReportFile ? '#EAFAF1' : '#FAFBFD',
+                      border: `2px dashed ${srDrag ? BLUE : scoreReportFile ? GREEN : BORDER}`,
+                      borderRadius: 8, padding: '28px 24px', textAlign: 'center', cursor: 'pointer',
+                      backgroundColor: srDrag ? '#EAF3FB' : scoreReportFile ? '#EAFAF1' : '#FAFBFD',
                       transition: 'all 0.15s',
                     }}
                   >
                     <div style={{ fontSize: 28, marginBottom: 8 }}>{scoreReportFile ? '✅' : '📄'}</div>
                     <div style={{ fontWeight: 600, fontSize: 13, color: scoreReportFile ? GREEN : NAVY, marginBottom: 4 }}>
-                      {scoreReportFile ? scoreReportFile.name : 'Click to upload score report'}
+                      {scoreReportFile ? scoreReportFile.name : srDrag ? 'Drop it here' : 'Drop here or click to browse'}
                     </div>
-                    {!scoreReportFile && <div style={{ fontSize: 11, color: '#888' }}>Official SAT score report</div>}
-                    <input
-                      id="sr-upload"
-                      type="file"
-                      accept="image/*,application/pdf"
-                      style={{ display: 'none' }}
-                      onChange={e => { const f = e.target.files[0]; if (f) setScoreReportFile(f); }}
-                    />
+                    {!scoreReportFile && <div style={{ fontSize: 11, color: '#888' }}>Official SAT score report (image or PDF)</div>}
+                    <input ref={srInputRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }}
+                      onChange={e => { const f = e.target.files[0]; if (f) setScoreReportFile(f); }} />
                   </div>
                 </div>
 
@@ -583,37 +582,30 @@ export default function GameplanGenerator() {
                   </div>
                   <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>Shows topics covered and sessions completed</div>
                   <div
-                    onClick={() => document.getElementById('portal-upload').click()}
+                    onClick={() => portalInputRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); setPortalDrag(true); }}
+                    onDragLeave={() => setPortalDrag(false)}
+                    onDrop={e => {
+                      e.preventDefault(); setPortalDrag(false);
+                      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).slice(0, 3);
+                      if (files.length) setPortalFiles(files);
+                    }}
                     style={{
-                      border: `2px dashed ${portalFiles.length > 0 ? BLUE : BORDER}`,
-                      borderRadius: 8,
-                      padding: '20px 24px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      backgroundColor: portalFiles.length > 0 ? '#EAF3FB' : '#FAFBFD',
+                      border: `2px dashed ${portalDrag ? BLUE : portalFiles.length > 0 ? BLUE : BORDER}`,
+                      borderRadius: 8, padding: '20px 24px', textAlign: 'center', cursor: 'pointer',
+                      backgroundColor: portalDrag ? '#EAF3FB' : portalFiles.length > 0 ? '#EAF3FB' : '#FAFBFD',
                       transition: 'all 0.15s',
                     }}
                   >
                     <div style={{ fontSize: 22, marginBottom: 6 }}>{portalFiles.length > 0 ? '🖼️' : '📸'}</div>
                     <div style={{ fontWeight: 600, fontSize: 13, color: portalFiles.length > 0 ? BLUE : '#777', marginBottom: 2 }}>
-                      {portalFiles.length > 0 ? `${portalFiles.length} screenshot${portalFiles.length > 1 ? 's' : ''} selected` : 'Click to upload portal screenshots'}
+                      {portalFiles.length > 0 ? `${portalFiles.length} screenshot${portalFiles.length > 1 ? 's' : ''} selected` : portalDrag ? 'Drop screenshots here' : 'Drop here or click to browse'}
                     </div>
                     {portalFiles.length > 0 && (
-                      <div style={{ fontSize: 11, color: '#888' }}>
-                        {portalFiles.map(f => f.name).join(', ')}
-                      </div>
+                      <div style={{ fontSize: 11, color: '#888' }}>{portalFiles.map(f => f.name).join(', ')}</div>
                     )}
-                    <input
-                      id="portal-upload"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      style={{ display: 'none' }}
-                      onChange={e => {
-                        const files = Array.from(e.target.files).slice(0, 3);
-                        setPortalFiles(files);
-                      }}
-                    />
+                    <input ref={portalInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+                      onChange={e => setPortalFiles(Array.from(e.target.files).slice(0, 3))} />
                   </div>
                 </div>
 
