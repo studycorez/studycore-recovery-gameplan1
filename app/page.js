@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 // ─── SAT / PSAT test dates ─────────────────────────────────────────────────────
 const SAT_PSAT_DATES = [
@@ -315,15 +315,88 @@ export default function GameplanGenerator() {
   const srInputRef = useRef();
   const portalInputRef = useRef();
 
+  // Platform pull state
+  const [pullMode, setPullMode]           = useState('pdf'); // 'pdf' | 'platform'
+  const [sessionCookie, setSessionCookie] = useState('');
+  const [studentSearch, setStudentSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching]         = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null); // { id, name }
+  const [platformFetching, setPlatformFetching] = useState(false);
+  const [platformData, setPlatformData]   = useState(null);
+  const [platformError, setPlatformError] = useState('');
+
   // Step 3 state
   const [generating, setGenerating]   = useState(false);
   const [progressMsgs, setProgressMsgs] = useState([]);
   const [generateError, setGenerateError] = useState('');
   const [result, setResult]           = useState(null); // { trackerUrl, programSummary, pdfBase64, studentName }
 
+  // Load sessionCookie from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('sc_session_cookie');
+    if (stored) setSessionCookie(stored);
+  }, []);
+
+  // Save sessionCookie to localStorage when it changes
+  useEffect(() => {
+    if (sessionCookie) localStorage.setItem('sc_session_cookie', sessionCookie);
+  }, [sessionCookie]);
+
   const handleStudentChange = e => {
     const { name, value } = e.target;
     setStudent(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleStudentSearch = async () => {
+    if (!studentSearch.trim() || !sessionCookie.trim()) return;
+    setSearching(true);
+    setSearchResults([]);
+    setPlatformError('');
+    try {
+      const res = await fetch('/api/search-students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: studentSearch, sessionCookie }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setPlatformError(data.error || 'Search failed'); return; }
+      setSearchResults(data.students || []);
+      if (data.students?.length === 0) setPlatformError('No students found matching that name.');
+    } catch (err) {
+      setPlatformError(err.message);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handlePlatformFetch = async () => {
+    if (!selectedStudent || !sessionCookie.trim()) return;
+    setPlatformFetching(true);
+    setPlatformData(null);
+    setPlatformError('');
+    try {
+      const res = await fetch('/api/fetch-platform-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: selectedStudent.id, studentName: selectedStudent.name, sessionCookie }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setPlatformError(data.error || 'Fetch failed'); return; }
+      setPlatformData(data);
+      // Pre-fill student form
+      setStudent(prev => ({
+        ...prev,
+        studentName: selectedStudent.name || prev.studentName,
+        baselineScore: data.baselineScore ? String(data.baselineScore) : prev.baselineScore,
+        rwScore: data.rwScore ? String(data.rwScore) : prev.rwScore,
+        mathScore: data.mathScore ? String(data.mathScore) : prev.mathScore,
+      }));
+    } catch (err) {
+      setPlatformError(err.message);
+    } finally {
+      setPlatformFetching(false);
+    }
   };
 
   const handleGuaranteeParse = async () => {
@@ -427,7 +500,11 @@ export default function GameplanGenerator() {
               coveredTopics: guaranteeParsed.portal?.topicsCovered || [],
             } : {}),
           },
-          diagnosticEntries: mode === 'guarantee' ? null : parsed?.diagnosticEntries,
+          diagnosticEntries: mode === 'guarantee'
+            ? null
+            : (mode === 'new' && pullMode === 'platform')
+              ? platformData?.diagnosticEntries
+              : parsed?.diagnosticEntries,
           guaranteeMode: mode === 'guarantee',
         }),
       });
@@ -484,7 +561,9 @@ export default function GameplanGenerator() {
     }
   };
 
-  const canAdvanceStep1 = mode === 'guarantee' ? (guaranteeParsed && !guaranteeParsing) : (parsed && !parsing);
+  const canAdvanceStep1 = mode === 'guarantee'
+    ? (guaranteeParsed && !guaranteeParsing)
+    : (pullMode === 'platform' ? (platformData !== null) : (parsed && !parsing));
   const canAdvanceStep2 = student.studentName.trim() && student.baselineScore && student.targetScore;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -545,36 +624,171 @@ export default function GameplanGenerator() {
             {mode === 'new' && (
               <>
                 <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
-                  Upload Diagnostic PDF
+                  {pullMode === 'platform' ? 'Pull from Platform' : 'Upload Diagnostic PDF'}
                 </div>
                 <div style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
-                  Upload the StudyCore SAT diagnostic report. Claude will extract all topic data automatically.
+                  {pullMode === 'platform'
+                    ? 'Fetch the student\'s latest finished SAT attempt directly from the StudyCore platform.'
+                    : 'Upload the StudyCore SAT diagnostic report. Claude will extract all topic data automatically.'}
                 </div>
 
-                <UploadZone onFile={handleFile} disabled={parsing} />
+                {/* PDF vs Platform toggle */}
+                <div style={{ display: 'flex', gap: 0, marginBottom: 16, border: `1px solid ${BORDER}`, borderRadius: 6, overflow: 'hidden' }}>
+                  {[
+                    { val: 'pdf',      label: 'Upload Diagnostic PDF' },
+                    { val: 'platform', label: 'Pull from Platform' },
+                  ].map(opt => (
+                    <button
+                      key={opt.val}
+                      onClick={() => { setPullMode(opt.val); setPlatformData(null); setPlatformError(''); setSearchResults([]); setSelectedStudent(null); }}
+                      style={{
+                        flex: 1,
+                        padding: '9px 0',
+                        border: 'none',
+                        backgroundColor: pullMode === opt.val ? NAVY : 'white',
+                        color: pullMode === opt.val ? 'white' : '#555',
+                        fontWeight: pullMode === opt.val ? 700 : 400,
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
 
-                {parsing && (
-                  <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#EAF3FB', borderRadius: 4, fontSize: 13, color: BLUE, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>⏳</span> Parsing PDF with Claude…
-                  </div>
+                {/* PDF upload UI */}
+                {pullMode === 'pdf' && (
+                  <>
+                    <UploadZone onFile={handleFile} disabled={parsing} />
+
+                    {parsing && (
+                      <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#EAF3FB', borderRadius: 4, fontSize: 13, color: BLUE, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span>⏳</span> Parsing PDF with Claude…
+                      </div>
+                    )}
+
+                    {parseError && (
+                      <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#FDEDEC', borderRadius: 4, color: RED, fontSize: 13 }}>
+                        <strong>Parse error:</strong> {parseError}
+                        <div style={{ marginTop: 6, fontSize: 12, color: '#888' }}>
+                          Check that the file is a valid StudyCore diagnostic PDF and that ANTHROPIC_API_KEY is set.
+                        </div>
+                      </div>
+                    )}
+
+                    {pdfFile && !parsing && !parseError && (
+                      <div style={{ marginTop: 10, fontSize: 12, color: '#888' }}>
+                        File: <strong>{pdfFile.name}</strong>
+                      </div>
+                    )}
+
+                    <ParsedPreview parsed={parsed} />
+                  </>
                 )}
 
-                {parseError && (
-                  <div style={{ marginTop: 14, padding: '10px 14px', backgroundColor: '#FDEDEC', borderRadius: 4, color: RED, fontSize: 13 }}>
-                    <strong>Parse error:</strong> {parseError}
-                    <div style={{ marginTop: 6, fontSize: 12, color: '#888' }}>
-                      Check that the file is a valid StudyCore diagnostic PDF and that ANTHROPIC_API_KEY is set.
+                {/* Platform pull UI */}
+                {pullMode === 'platform' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {/* Session cookie */}
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 5, color: '#222' }}>
+                        Session Cookie <span style={{ color: RED }}>*</span>
+                      </label>
+                      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+                        Chrome DevTools → Application → Cookies → my.studycore.net. Saved in browser after first use.
+                      </div>
+                      <input
+                        type="password"
+                        value={sessionCookie}
+                        onChange={e => setSessionCookie(e.target.value)}
+                        placeholder="Paste session cookie…"
+                        style={{ ...inp }}
+                      />
                     </div>
+
+                    {/* Student search */}
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 5, color: '#222' }}>
+                        Student Name <span style={{ color: RED }}>*</span>
+                      </label>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input
+                          value={studentSearch}
+                          onChange={e => setStudentSearch(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleStudentSearch()}
+                          placeholder="Search by name…"
+                          style={{ ...inp, flex: 1 }}
+                        />
+                        <button
+                          onClick={handleStudentSearch}
+                          disabled={searching || !studentSearch.trim() || !sessionCookie.trim()}
+                          style={btn(BLUE, searching || !studentSearch.trim() || !sessionCookie.trim())}
+                        >
+                          {searching ? 'Searching…' : 'Search'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search results */}
+                    {searchResults.length > 0 && (
+                      <div style={{ border: `1px solid ${BORDER}`, borderRadius: 4, overflow: 'hidden' }}>
+                        {searchResults.map(s => (
+                          <div
+                            key={s.id}
+                            onClick={() => { setSelectedStudent(s); setPlatformData(null); setPlatformError(''); }}
+                            style={{
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              backgroundColor: selectedStudent?.id === s.id ? '#EAF3FB' : 'white',
+                              borderBottom: `1px solid ${BORDER}`,
+                              fontSize: 13,
+                              color: selectedStudent?.id === s.id ? BLUE : '#222',
+                              fontWeight: selectedStudent?.id === s.id ? 700 : 400,
+                            }}
+                          >
+                            {s.name}
+                            {s.email && <span style={{ color: '#888', marginLeft: 8, fontSize: 11 }}>{s.email}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Fetch button */}
+                    {selectedStudent && (
+                      <button
+                        onClick={handlePlatformFetch}
+                        disabled={platformFetching}
+                        style={btn(NAVY, platformFetching)}
+                      >
+                        {platformFetching ? 'Fetching from Platform…' : `Fetch Data for ${selectedStudent.name}`}
+                      </button>
+                    )}
+
+                    {/* Platform error */}
+                    {platformError && (
+                      <div style={{ padding: '10px 12px', backgroundColor: '#FDEDEC', border: `1px solid ${RED}`, borderRadius: 4, color: RED, fontSize: 13 }}>
+                        {platformError}
+                      </div>
+                    )}
+
+                    {/* Success state */}
+                    {platformData && (
+                      <div style={{ padding: '12px 14px', backgroundColor: '#EAFAF1', border: `1px solid ${GREEN}`, borderRadius: 4 }}>
+                        <div style={{ fontWeight: 700, color: GREEN, fontSize: 13, marginBottom: 4 }}>
+                          Data fetched successfully
+                        </div>
+                        <div style={{ fontSize: 12, color: '#444' }}>
+                          Score: <strong>{platformData.baselineScore}</strong>
+                          {platformData.rwScore && ` (R&W: ${platformData.rwScore}`}
+                          {platformData.mathScore && ` · Math: ${platformData.mathScore})`}
+                          {' · '}{platformData.questionCount} questions · {platformData.domainCount} domains
+                          {platformData.testDate && ` · Test date: ${platformData.testDate}`}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-
-                {pdfFile && !parsing && !parseError && (
-                  <div style={{ marginTop: 10, fontSize: 12, color: '#888' }}>
-                    File: <strong>{pdfFile.name}</strong>
-                  </div>
-                )}
-
-                <ParsedPreview parsed={parsed} />
 
                 <div style={{ marginTop: 20, textAlign: 'right' }}>
                   <button
@@ -1009,7 +1223,9 @@ export default function GameplanGenerator() {
               <div style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
                 {mode === 'guarantee'
                   ? `Guarantee recovery — domain bands inferred from score report${guaranteeParsed?.portal?.topicsCovered?.length ? ` · ${guaranteeParsed.portal.topicsCovered.length} topics covered` : ''}`
-                  : `${parsed?.diagnosticEntries?.length || 0} diagnostic topics parsed from PDF`}
+                  : (pullMode === 'platform' && platformData)
+                    ? `${platformData.domainCount} domains · ${platformData.questionCount} questions pulled from platform`
+                    : `${parsed?.diagnosticEntries?.length || 0} diagnostic topics parsed from PDF`}
               </div>
             </div>
 
