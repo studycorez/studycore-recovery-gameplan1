@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
 // ─── SAT / PSAT test dates ─────────────────────────────────────────────────────
 const SAT_PSAT_DATES = [
@@ -317,14 +317,12 @@ export default function GameplanGenerator() {
 
   // Platform pull state
   const [pullMode, setPullMode]           = useState('pdf'); // 'pdf' | 'platform'
-  const [sessionCookie, setSessionCookie] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searching, setSearching]         = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState(null); // { id, name }
-  const [platformFetching, setPlatformFetching] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null); // { id, name, topicAccuracy }
   const [platformData, setPlatformData]   = useState(null);
   const [platformError, setPlatformError] = useState('');
+  const [hsStudents, setHsStudents]       = useState([]);
+  const [hsLoading, setHsLoading]         = useState(false);
 
   // Step 3 state
   const [generating, setGenerating]   = useState(false);
@@ -332,71 +330,47 @@ export default function GameplanGenerator() {
   const [generateError, setGenerateError] = useState('');
   const [result, setResult]           = useState(null); // { trackerUrl, programSummary, pdfBase64, studentName }
 
-  // Load sessionCookie from localStorage on mount
+  // Load HighScores student list when switching to platform mode
   useEffect(() => {
-    const stored = localStorage.getItem('sc_session_cookie');
-    if (stored) setSessionCookie(stored);
-  }, []);
-
-  // Save sessionCookie to localStorage when it changes
-  useEffect(() => {
-    if (sessionCookie) localStorage.setItem('sc_session_cookie', sessionCookie);
-  }, [sessionCookie]);
+    if (pullMode !== 'platform' || hsStudents.length > 0) return;
+    setHsLoading(true);
+    setPlatformError('');
+    fetch('/api/highscores-students')
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) { setPlatformError(d.error); return; }
+        setHsStudents(d.students || []);
+      })
+      .catch(e => setPlatformError(e.message))
+      .finally(() => setHsLoading(false));
+  }, [pullMode, hsStudents.length]);
 
   const handleStudentChange = e => {
     const { name, value } = e.target;
     setStudent(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleStudentSearch = async () => {
-    if (!studentSearch.trim() || !sessionCookie.trim()) return;
-    setSearching(true);
-    setSearchResults([]);
-    setPlatformError('');
-    try {
-      const res = await fetch('/api/search-students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: studentSearch, sessionCookie }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) { setPlatformError(data.error || 'Search failed'); return; }
-      setSearchResults(data.students || []);
-      if (data.students?.length === 0) setPlatformError('No students found matching that name.');
-    } catch (err) {
-      setPlatformError(err.message);
-    } finally {
-      setSearching(false);
-    }
-  };
+  // Client-side filter of HighScores student list
+  const hsFiltered = useMemo(() => {
+    if (!studentSearch.trim()) return hsStudents.slice(0, 12);
+    const q = studentSearch.toLowerCase();
+    return hsStudents.filter(s => s.name?.toLowerCase().includes(q)).slice(0, 15);
+  }, [studentSearch, hsStudents]);
 
-  const handlePlatformFetch = async () => {
-    if (!selectedStudent || !sessionCookie.trim()) return;
-    setPlatformFetching(true);
-    setPlatformData(null);
+  const handleSelectHsStudent = (s) => {
+    setSelectedStudent(s);
     setPlatformError('');
-    try {
-      const res = await fetch('/api/fetch-platform-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId: selectedStudent.id, studentName: selectedStudent.name, sessionCookie }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) { setPlatformError(data.error || 'Fetch failed'); return; }
-      setPlatformData(data);
-      // Pre-fill student form
-      setStudent(prev => ({
-        ...prev,
-        studentName: selectedStudent.name || prev.studentName,
-        baselineScore: data.baselineScore ? String(data.baselineScore) : prev.baselineScore,
-        rwScore: data.rwScore ? String(data.rwScore) : prev.rwScore,
-        mathScore: data.mathScore ? String(data.mathScore) : prev.mathScore,
-      }));
-    } catch (err) {
-      setPlatformError(err.message);
-    } finally {
-      setPlatformFetching(false);
-    }
+    const diagnosticEntries = s.topicAccuracy.map(t => ({
+      platformName: t.topicName,
+      qs: t.total,
+      mastery: t.accuracyPercent,
+    }));
+    setPlatformData({
+      diagnosticEntries,
+      topicCount: s.topicAccuracy.length,
+      assignmentCompletion: s.assignmentCompletion,
+    });
+    setStudent(prev => ({ ...prev, studentName: s.name || prev.studentName }));
   };
 
   const handleGuaranteeParse = async () => {
@@ -690,79 +664,48 @@ export default function GameplanGenerator() {
                 {/* Platform pull UI */}
                 {pullMode === 'platform' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {/* Session cookie */}
-                    <div>
-                      <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 5, color: '#222' }}>
-                        Session Cookie <span style={{ color: RED }}>*</span>
-                      </label>
-                      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
-                        Chrome DevTools → Application → Cookies → my.studycore.net. Saved in browser after first use.
-                      </div>
-                      <input
-                        type="password"
-                        value={sessionCookie}
-                        onChange={e => setSessionCookie(e.target.value)}
-                        placeholder="Paste session cookie…"
-                        style={{ ...inp }}
-                      />
-                    </div>
-
                     {/* Student search */}
                     <div>
                       <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 5, color: '#222' }}>
                         Student Name <span style={{ color: RED }}>*</span>
                       </label>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <input
-                          value={studentSearch}
-                          onChange={e => setStudentSearch(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && handleStudentSearch()}
-                          placeholder="Search by name…"
-                          style={{ ...inp, flex: 1 }}
-                        />
-                        <button
-                          onClick={handleStudentSearch}
-                          disabled={searching || !studentSearch.trim() || !sessionCookie.trim()}
-                          style={btn(BLUE, searching || !studentSearch.trim() || !sessionCookie.trim())}
-                        >
-                          {searching ? 'Searching…' : 'Search'}
-                        </button>
+                      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+                        {hsLoading ? 'Loading student list from platform…' : `${hsStudents.length} active students loaded · type to filter`}
                       </div>
+                      <input
+                        value={studentSearch}
+                        onChange={e => { setStudentSearch(e.target.value); setSelectedStudent(null); setPlatformData(null); }}
+                        placeholder="Type student name…"
+                        style={{ ...inp }}
+                        disabled={hsLoading}
+                      />
                     </div>
 
-                    {/* Search results */}
-                    {searchResults.length > 0 && (
+                    {/* Filtered results */}
+                    {!hsLoading && studentSearch.trim() && hsFiltered.length > 0 && !selectedStudent && (
                       <div style={{ border: `1px solid ${BORDER}`, borderRadius: 4, overflow: 'hidden' }}>
-                        {searchResults.map(s => (
+                        {hsFiltered.map(s => (
                           <div
                             key={s.id}
-                            onClick={() => { setSelectedStudent(s); setPlatformData(null); setPlatformError(''); }}
+                            onClick={() => handleSelectHsStudent(s)}
                             style={{
                               padding: '8px 12px',
                               cursor: 'pointer',
-                              backgroundColor: selectedStudent?.id === s.id ? '#EAF3FB' : 'white',
+                              backgroundColor: 'white',
                               borderBottom: `1px solid ${BORDER}`,
                               fontSize: 13,
-                              color: selectedStudent?.id === s.id ? BLUE : '#222',
-                              fontWeight: selectedStudent?.id === s.id ? 700 : 400,
+                              color: '#222',
                             }}
                           >
                             {s.name}
-                            {s.email && <span style={{ color: '#888', marginLeft: 8, fontSize: 11 }}>{s.email}</span>}
+                            <span style={{ color: '#888', marginLeft: 8, fontSize: 11 }}>{s.topicAccuracy.length} topics</span>
                           </div>
                         ))}
                       </div>
                     )}
 
-                    {/* Fetch button */}
-                    {selectedStudent && (
-                      <button
-                        onClick={handlePlatformFetch}
-                        disabled={platformFetching}
-                        style={btn(NAVY, platformFetching)}
-                      >
-                        {platformFetching ? 'Fetching from Platform…' : `Fetch Data for ${selectedStudent.name}`}
-                      </button>
+                    {!hsLoading && studentSearch.trim() && hsFiltered.length === 0 && !selectedStudent && (
+                      <div style={{ fontSize: 12, color: '#888' }}>No students found matching "{studentSearch}"</div>
                     )}
 
                     {/* Platform error */}
@@ -773,18 +716,16 @@ export default function GameplanGenerator() {
                     )}
 
                     {/* Success state */}
-                    {platformData && (
+                    {platformData && selectedStudent && (
                       <div style={{ padding: '12px 14px', backgroundColor: '#EAFAF1', border: `1px solid ${GREEN}`, borderRadius: 4 }}>
                         <div style={{ fontWeight: 700, color: GREEN, fontSize: 13, marginBottom: 4 }}>
-                          Data fetched successfully
+                          {selectedStudent.name} — data loaded
                         </div>
                         <div style={{ fontSize: 12, color: '#444' }}>
-                          Score: <strong>{platformData.baselineScore}</strong>
-                          {platformData.rwScore && ` (R&W: ${platformData.rwScore}`}
-                          {platformData.mathScore && ` · Math: ${platformData.mathScore})`}
-                          {' · '}{platformData.questionCount} questions · {platformData.domainCount} domains
-                          {platformData.testDate && ` · Test date: ${platformData.testDate}`}
+                          {platformData.topicCount} topics pulled from platform
+                          {platformData.assignmentCompletion && ` · ${platformData.assignmentCompletion.completed}/${platformData.assignmentCompletion.total} assignments completed (${platformData.assignmentCompletion.completionPercent?.toFixed(0)}%)`}
                         </div>
+                        <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>Enter baseline + target scores below to generate the gameplan</div>
                       </div>
                     )}
                   </div>
@@ -1224,7 +1165,7 @@ export default function GameplanGenerator() {
                 {mode === 'guarantee'
                   ? `Guarantee recovery — domain bands inferred from score report${guaranteeParsed?.portal?.topicsCovered?.length ? ` · ${guaranteeParsed.portal.topicsCovered.length} topics covered` : ''}`
                   : (pullMode === 'platform' && platformData)
-                    ? `${platformData.domainCount} domains · ${platformData.questionCount} questions pulled from platform`
+                    ? `${platformData.topicCount} topics pulled from platform`
                     : `${parsed?.diagnosticEntries?.length || 0} diagnostic topics parsed from PDF`}
               </div>
             </div>
