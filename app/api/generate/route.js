@@ -81,6 +81,7 @@ export async function POST(request) {
           blanks:           parseInt(studentData.blanks || 0, 10),
           targetTestDate:   studentData.targetTestDate || null,
           programStartDate: studentData.programStartDate || null,
+          weeklySchedule:   studentData.weeklySchedule || null,
         });
         line(controller, {
           status: 'routing_complete',

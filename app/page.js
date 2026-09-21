@@ -330,6 +330,29 @@ export default function GameplanGenerator() {
   const [generateError, setGenerateError] = useState('');
   const [result, setResult]           = useState(null); // { trackerUrl, programSummary, pdfBase64, studentName }
 
+  // Weekly schedule state (active when test date is set)
+  const [weeklySchedule, setWeeklySchedule] = useState([]);
+  const [schedDefSessions, setSchedDefSessions] = useState(2);
+  const [schedDefHours, setSchedDefHours] = useState(1);
+
+  // Build/reset weekly schedule when test date or start date changes
+  useEffect(() => {
+    if (!student.targetTestDate) { setWeeklySchedule([]); return; }
+    const start = student.programStartDate
+      ? new Date(student.programStartDate + 'T00:00:00')
+      : new Date();
+    const end = new Date(student.targetTestDate + 'T00:00:00');
+    const weeksCount = Math.max(1, Math.round((end - start) / (7 * 24 * 60 * 60 * 1000)));
+    const defSess = student.sessionFrequency === '3x' ? 3 : student.sessionFrequency === '2x' ? 2 : 1;
+    setSchedDefSessions(defSess);
+    setWeeklySchedule(Array.from({ length: weeksCount }, (_, i) => ({
+      week: i + 1,
+      sessions: defSess,
+      hoursPerSession: schedDefHours,
+    })));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [student.targetTestDate, student.programStartDate]);
+
   // Load HighScores student list when switching to platform mode
   useEffect(() => {
     if (pullMode !== 'platform' || hsStudents.length > 0) return;
@@ -469,6 +492,7 @@ export default function GameplanGenerator() {
         body: JSON.stringify({
           studentData: {
             ...student,
+            weeklySchedule: weeklySchedule.length > 0 ? weeklySchedule : null,
             ...(mode === 'guarantee' && guaranteeParsed?.scoreReport?.domains ? {
               guaranteeDomains: guaranteeParsed.scoreReport.domains,
               coveredTopics: guaranteeParsed.portal?.topicsCovered || [],
@@ -1092,6 +1116,101 @@ export default function GameplanGenerator() {
                             : `Only ${freqSessions} of ${purchased} purchased sessions fit at this pace — consider ${student.sessionFrequency === '1x' ? '2×/week' : '3×/week'}.`}
                         </span>
                       )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Weekly Schedule Editor */}
+              {weeklySchedule.length > 0 && (() => {
+                const totalSessions = weeklySchedule.reduce((s, w) => s + w.sessions, 0);
+                const totalHours    = weeklySchedule.reduce((s, w) => s + w.sessions * w.hoursPerSession, 0);
+                const totalSlots    = Math.floor(totalHours);
+                const selStyle = (active) => ({
+                  padding: '2px 7px', fontSize: 11, fontWeight: active ? 700 : 400,
+                  border: `1px solid ${active ? BLUE : BORDER}`, borderRadius: 3, cursor: 'pointer',
+                  backgroundColor: active ? '#EAF3FB' : 'white', color: active ? BLUE : '#555',
+                });
+                return (
+                  <div style={{ marginTop: 12, border: `1px solid ${BORDER}`, borderRadius: 6, overflow: 'hidden' }}>
+                    {/* Header */}
+                    <div style={{ backgroundColor: NAVY, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'white', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                        Weekly Schedule
+                      </span>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <span style={{ color: '#B8CDE0', fontSize: 11 }}>Default:</span>
+                        <select
+                          value={schedDefSessions}
+                          onChange={e => setSchedDefSessions(Number(e.target.value))}
+                          style={{ fontSize: 11, padding: '2px 4px', borderRadius: 3, border: `1px solid ${BORDER}` }}
+                        >
+                          {[0,1,2,3].map(n => <option key={n} value={n}>{n} sessions</option>)}
+                        </select>
+                        <select
+                          value={schedDefHours}
+                          onChange={e => setSchedDefHours(Number(e.target.value))}
+                          style={{ fontSize: 11, padding: '2px 4px', borderRadius: 3, border: `1px solid ${BORDER}` }}
+                        >
+                          <option value={1}>1h</option>
+                          <option value={1.5}>1.5h</option>
+                          <option value={2}>2h</option>
+                        </select>
+                        <button
+                          onClick={() => setWeeklySchedule(ws => ws.map(w => ({ ...w, sessions: schedDefSessions, hoursPerSession: schedDefHours })))}
+                          style={{ fontSize: 11, fontWeight: 700, padding: '3px 9px', backgroundColor: BLUE, color: 'white', border: 'none', borderRadius: 3, cursor: 'pointer' }}
+                        >
+                          Apply to all
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Column headers */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 80px 48px 64px', gap: 0, backgroundColor: '#F0F3F8', borderBottom: `1px solid ${BORDER}` }}>
+                      {['Week','Sessions','Duration','Hours','Lessons'].map(h => (
+                        <div key={h} style={{ padding: '4px 8px', fontSize: 10, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: 0.4 }}>{h}</div>
+                      ))}
+                    </div>
+
+                    {/* Week rows */}
+                    <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                      {weeklySchedule.map((wk, i) => {
+                        const wkHours   = wk.sessions * wk.hoursPerSession;
+                        const wkLessons = Math.floor(wkHours);
+                        return (
+                          <div key={wk.week} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 80px 48px 64px', backgroundColor: i % 2 === 0 ? 'white' : '#F7FAFD', borderBottom: `1px solid ${BORDER}`, alignItems: 'center' }}>
+                            <div style={{ padding: '5px 8px', fontSize: 12, color: '#555', fontWeight: 600 }}>Wk {wk.week}</div>
+                            <div style={{ padding: '4px 8px', display: 'flex', gap: 4 }}>
+                              {[0,1,2,3].map(n => (
+                                <button key={n} onClick={() => setWeeklySchedule(ws => ws.map(w => w.week === wk.week ? { ...w, sessions: n } : w))} style={selStyle(wk.sessions === n)}>
+                                  {n}
+                                </button>
+                              ))}
+                            </div>
+                            <div style={{ padding: '4px 8px' }}>
+                              <select
+                                value={wk.hoursPerSession}
+                                onChange={e => setWeeklySchedule(ws => ws.map(w => w.week === wk.week ? { ...w, hoursPerSession: Number(e.target.value) } : w))}
+                                style={{ fontSize: 11, padding: '2px 3px', borderRadius: 3, border: `1px solid ${BORDER}`, width: '100%' }}
+                              >
+                                <option value={1}>1h</option>
+                                <option value={1.5}>1.5h</option>
+                                <option value={2}>2h</option>
+                              </select>
+                            </div>
+                            <div style={{ padding: '4px 8px', fontSize: 11, color: wkHours === 0 ? '#bbb' : NAVY, fontWeight: wkHours > 0 ? 700 : 400 }}>{wkHours > 0 ? `${wkHours % 1 === 0 ? wkHours : wkHours.toFixed(1)}h` : '—'}</div>
+                            <div style={{ padding: '4px 8px', fontSize: 11, color: wkLessons === 0 ? '#bbb' : GREEN, fontWeight: wkLessons > 0 ? 700 : 400 }}>{wkLessons > 0 ? `${wkLessons} topic${wkLessons !== 1 ? 's' : ''}` : '—'}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Totals row */}
+                    <div style={{ backgroundColor: '#EAF3FB', padding: '8px 12px', borderTop: `1.5px solid ${BLUE}`, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: 12 }}><strong style={{ color: NAVY }}>{totalSessions}</strong> <span style={{ color: '#555' }}>sessions</span></div>
+                      <div style={{ fontSize: 12 }}><strong style={{ color: NAVY }}>{totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1)}</strong> <span style={{ color: '#555' }}>hours</span></div>
+                      <div style={{ fontSize: 12 }}><strong style={{ color: GREEN }}>{totalSlots}</strong> <span style={{ color: '#555' }}>lesson slots</span></div>
+                      <div style={{ fontSize: 11, color: '#888', marginLeft: 'auto' }}>1h = 1 lesson slot · 1.5h = 1 · 2h = 2</div>
                     </div>
                   </div>
                 );
