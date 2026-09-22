@@ -82,6 +82,7 @@ export async function POST(request) {
           targetTestDate:   studentData.targetTestDate || null,
           programStartDate: studentData.programStartDate || null,
           weeklySchedule:   studentData.weeklySchedule || null,
+          weeksOverride:    studentData.weeksOverride    || null,
         });
         line(controller, {
           status: 'routing_complete',

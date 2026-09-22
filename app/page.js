@@ -334,15 +334,23 @@ export default function GameplanGenerator() {
   const [weeklySchedule, setWeeklySchedule] = useState([]);
   const [schedDefSessions, setSchedDefSessions] = useState(2);
   const [schedDefHours, setSchedDefHours] = useState(1);
+  const [weeksOverride, setWeeksOverride] = useState(''); // manual override of auto-calculated weeks
 
-  // Build/reset weekly schedule when test date or start date changes
+  // Build/reset weekly schedule when test date, start date, or weeks override changes
   useEffect(() => {
-    if (!student.targetTestDate) { setWeeklySchedule([]); return; }
-    const start = student.programStartDate
-      ? new Date(student.programStartDate + 'T00:00:00')
-      : new Date();
-    const end = new Date(student.targetTestDate + 'T00:00:00');
-    const weeksCount = Math.max(1, Math.round((end - start) / (7 * 24 * 60 * 60 * 1000)));
+    if (!student.targetTestDate && !weeksOverride) { setWeeklySchedule([]); return; }
+    let weeksCount;
+    if (weeksOverride && parseInt(weeksOverride) > 0) {
+      weeksCount = parseInt(weeksOverride);
+    } else if (student.targetTestDate) {
+      const start = student.programStartDate
+        ? new Date(student.programStartDate + 'T00:00:00')
+        : new Date();
+      const end = new Date(student.targetTestDate + 'T00:00:00');
+      weeksCount = Math.max(1, Math.round((end - start) / (7 * 24 * 60 * 60 * 1000)));
+    } else {
+      setWeeklySchedule([]); return;
+    }
     const defSess = student.sessionFrequency === '3x' ? 3 : student.sessionFrequency === '2x' ? 2 : 1;
     setSchedDefSessions(defSess);
     setWeeklySchedule(Array.from({ length: weeksCount }, (_, i) => ({
@@ -351,7 +359,7 @@ export default function GameplanGenerator() {
       hoursPerSession: schedDefHours,
     })));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [student.targetTestDate, student.programStartDate]);
+  }, [student.targetTestDate, student.programStartDate, weeksOverride]);
 
   // Load HighScores student list when switching to platform mode
   useEffect(() => {
@@ -493,6 +501,7 @@ export default function GameplanGenerator() {
           studentData: {
             ...student,
             weeklySchedule: weeklySchedule.length > 0 ? weeklySchedule : null,
+            weeksOverride: weeksOverride && parseInt(weeksOverride) > 0 ? parseInt(weeksOverride) : null,
             ...(mode === 'guarantee' && guaranteeParsed?.scoreReport?.domains ? {
               guaranteeDomains: guaranteeParsed.scoreReport.domains,
               coveredTopics: guaranteeParsed.portal?.topicsCovered || [],
@@ -1055,8 +1064,13 @@ export default function GameplanGenerator() {
               {/* Weeks & pacing recommendation */}
               {(() => {
                 const calc = calcWeeksAndSessions(student.programStartDate, student.targetTestDate, student.sessionFrequency);
-                if (!calc) return null;
-                const { weeks, sessionsAt1x, sessionsAt2x, sessionsAt3x } = calc;
+                const overrideWeeks = weeksOverride && parseInt(weeksOverride) > 0 ? parseInt(weeksOverride) : null;
+                if (!calc && !overrideWeeks) return null;
+                const baseCalc = calc || { weeks: overrideWeeks, sessionsAt1x: overrideWeeks, sessionsAt2x: overrideWeeks * 2, sessionsAt3x: overrideWeeks * 3 };
+                const weeks = overrideWeeks ?? baseCalc.weeks;
+                const sessionsAt1x = weeks;
+                const sessionsAt2x = weeks * 2;
+                const sessionsAt3x = weeks * 3;
                 const purchased = parseInt(student.sessionsPurchased) || null;
                 const freqSessions = student.sessionFrequency === '3x' ? sessionsAt3x : student.sessionFrequency === '2x' ? sessionsAt2x : sessionsAt1x;
                 const tight = weeks < 8;
@@ -1076,7 +1090,7 @@ export default function GameplanGenerator() {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
                       {[
-                        { label: 'Weeks to Test', value: String(weeks), sub: student.programStartDate ? 'from start date' : 'from today' },
+                          { label: 'Weeks to Test', value: String(weeks), sub: overrideWeeks ? 'manual override' : student.programStartDate ? 'from start date' : 'from today' },
                         { label: '1× / week', value: String(sessionsAt1x), sub: 'sessions available' },
                         { label: '2× / week', value: String(sessionsAt2x), sub: 'sessions available' },
                         { label: '3× / week', value: String(sessionsAt3x), sub: 'sessions available' },
@@ -1087,6 +1101,29 @@ export default function GameplanGenerator() {
                           <div style={{ fontSize: 10, color: '#888' }}>{m.sub}</div>
                         </div>
                       ))}
+                    </div>
+
+                    {/* Manual weeks override */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, color: '#666', whiteSpace: 'nowrap' }}>Override weeks:</div>
+                      <input
+                        type="number"
+                        min="1"
+                        max="52"
+                        value={weeksOverride}
+                        onChange={e => setWeeksOverride(e.target.value)}
+                        placeholder={String(baseCalc.weeks)}
+                        style={{ ...inp, width: 72, padding: '5px 8px', fontSize: 12 }}
+                      />
+                      {overrideWeeks && (
+                        <button
+                          onClick={() => setWeeksOverride('')}
+                          style={{ fontSize: 11, color: BLUE, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                        >
+                          Reset
+                        </button>
+                      )}
+                      <div style={{ fontSize: 11, color: '#999' }}>Use this if the date-based calc doesn't match the actual program length.</div>
                     </div>
 
                     {/* Recommended plan box */}
