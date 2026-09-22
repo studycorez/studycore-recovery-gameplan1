@@ -943,7 +943,7 @@ export default function GameplanGenerator() {
             {/* Scores row */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: BLUE, letterSpacing: 1.5, marginBottom: 10, textTransform: 'uppercase' }}>Scores</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
                 <Field label="Baseline Score" required>
                   <input type="number" name="baselineScore" value={student.baselineScore} onChange={handleStudentChange} style={inp} placeholder="e.g. 1150" />
                 </Field>
@@ -954,6 +954,28 @@ export default function GameplanGenerator() {
                   <input type="number" name="blanks" value={student.blanks} onChange={handleStudentChange} style={inp} placeholder="0" />
                 </Field>
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <Field label="R&W Score" hint="Optional — from score report">
+                  <input type="number" name="rwScore" value={student.rwScore} onChange={handleStudentChange} style={inp} placeholder="e.g. 580" />
+                </Field>
+                <Field label="Math Score" hint="Optional — from score report">
+                  <input type="number" name="mathScore" value={student.mathScore} onChange={handleStudentChange} style={inp} placeholder="e.g. 570" />
+                </Field>
+                <div />
+              </div>
+              {(student.rwScore || student.mathScore) && (
+                <div style={{ marginTop: 8, padding: '8px 12px', backgroundColor: '#F8F4FF', border: `1px solid #9B59B6`, borderRadius: 4, fontSize: 12, color: '#6C3483' }}>
+                  <strong>Section breakdown:</strong>{' '}
+                  {student.rwScore ? `R&W ${student.rwScore}` : ''}
+                  {student.rwScore && student.mathScore ? ' · ' : ''}
+                  {student.mathScore ? `Math ${student.mathScore}` : ''}
+                  {student.rwScore && student.mathScore && parseInt(student.rwScore) + parseInt(student.mathScore) !== parseInt(student.baselineScore) && parseInt(student.baselineScore) > 0 && (
+                    <span style={{ marginLeft: 8, color: ORANGE }}>
+                      (sum = {parseInt(student.rwScore) + parseInt(student.mathScore)}, baseline = {student.baselineScore})
+                    </span>
+                  )}
+                </div>
+              )}
               {student.baselineScore && student.targetScore && (
                 <div style={{ marginTop: 8, padding: '8px 12px', backgroundColor: '#EAF3FB', borderRadius: 4, fontSize: 12 }}>
                   <strong style={{ color: NAVY }}>Gap: </strong>
