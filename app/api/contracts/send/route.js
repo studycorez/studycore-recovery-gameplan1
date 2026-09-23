@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { createContract } from '../../../../lib/contracts';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req) {
   try {
     const body = await req.json();
@@ -30,6 +28,7 @@ export async function POST(req) {
       ? buildStudentEmail({ recipientName, studentName: contractData?.studentName, signingUrl })
       : buildTutorEmail({ recipientName, signingUrl });
 
+    const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'noreply@studycore.net',
       to: recipientEmail,
