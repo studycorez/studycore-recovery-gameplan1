@@ -1184,7 +1184,6 @@ export default function GameplanGenerator() {
               {weeklySchedule.length > 0 && (() => {
                 const totalSessions = weeklySchedule.reduce((s, w) => s + w.sessions, 0);
                 const totalHours    = weeklySchedule.reduce((s, w) => s + w.sessions * w.hoursPerSession, 0);
-                const totalSlots    = Math.floor(totalHours);
                 const selStyle = (active) => ({
                   padding: '2px 7px', fontSize: 11, fontWeight: active ? 700 : 400,
                   border: `1px solid ${active ? BLUE : BORDER}`, borderRadius: 3, cursor: 'pointer',
@@ -1225,8 +1224,8 @@ export default function GameplanGenerator() {
                     </div>
 
                     {/* Column headers */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 80px 48px 64px', gap: 0, backgroundColor: '#F0F3F8', borderBottom: `1px solid ${BORDER}` }}>
-                      {['Week','Sessions','Duration','Hours','Lessons'].map(h => (
+                    <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 80px 60px', gap: 0, backgroundColor: '#F0F3F8', borderBottom: `1px solid ${BORDER}` }}>
+                      {['Week','Sessions','Duration','Hours'].map(h => (
                         <div key={h} style={{ padding: '4px 8px', fontSize: 10, fontWeight: 700, color: '#666', textTransform: 'uppercase', letterSpacing: 0.4 }}>{h}</div>
                       ))}
                     </div>
@@ -1234,10 +1233,9 @@ export default function GameplanGenerator() {
                     {/* Week rows */}
                     <div style={{ maxHeight: 260, overflowY: 'auto' }}>
                       {weeklySchedule.map((wk, i) => {
-                        const wkHours   = wk.sessions * wk.hoursPerSession;
-                        const wkLessons = Math.floor(wkHours);
+                        const wkHours = wk.sessions * wk.hoursPerSession;
                         return (
-                          <div key={wk.week} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 80px 48px 64px', backgroundColor: i % 2 === 0 ? 'white' : '#F7FAFD', borderBottom: `1px solid ${BORDER}`, alignItems: 'center' }}>
+                          <div key={wk.week} style={{ display: 'grid', gridTemplateColumns: '60px 1fr 80px 60px', backgroundColor: i % 2 === 0 ? 'white' : '#F7FAFD', borderBottom: `1px solid ${BORDER}`, alignItems: 'center' }}>
                             <div style={{ padding: '5px 8px', fontSize: 12, color: '#555', fontWeight: 600 }}>Wk {wk.week}</div>
                             <div style={{ padding: '4px 8px', display: 'flex', gap: 4 }}>
                               {[0,1,2,3].map(n => (
@@ -1258,7 +1256,6 @@ export default function GameplanGenerator() {
                               </select>
                             </div>
                             <div style={{ padding: '4px 8px', fontSize: 11, color: wkHours === 0 ? '#bbb' : NAVY, fontWeight: wkHours > 0 ? 700 : 400 }}>{wkHours > 0 ? `${wkHours % 1 === 0 ? wkHours : wkHours.toFixed(1)}h` : '—'}</div>
-                            <div style={{ padding: '4px 8px', fontSize: 11, color: wkLessons === 0 ? '#bbb' : GREEN, fontWeight: wkLessons > 0 ? 700 : 400 }}>{wkLessons > 0 ? `${wkLessons} topic${wkLessons !== 1 ? 's' : ''}` : '—'}</div>
                           </div>
                         );
                       })}
@@ -1267,9 +1264,8 @@ export default function GameplanGenerator() {
                     {/* Totals row */}
                     <div style={{ backgroundColor: '#EAF3FB', padding: '8px 12px', borderTop: `1.5px solid ${BLUE}`, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
                       <div style={{ fontSize: 12 }}><strong style={{ color: NAVY }}>{totalSessions}</strong> <span style={{ color: '#555' }}>sessions</span></div>
-                      <div style={{ fontSize: 12 }}><strong style={{ color: NAVY }}>{totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1)}</strong> <span style={{ color: '#555' }}>hours</span></div>
-                      <div style={{ fontSize: 12 }}><strong style={{ color: GREEN }}>{totalSlots}</strong> <span style={{ color: '#555' }}>lesson slots</span></div>
-                      <div style={{ fontSize: 11, color: '#888', marginLeft: 'auto' }}>1h = 1 lesson slot · 1.5h = 1 · 2h = 2</div>
+                      <div style={{ fontSize: 12 }}><strong style={{ color: GREEN }}>{totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1)}</strong> <span style={{ color: '#555' }}>total hours</span></div>
+                      <div style={{ fontSize: 11, color: '#888', marginLeft: 'auto' }}>Each session = 1 plan entry · hours tracked for billing</div>
                     </div>
                   </div>
                 );
@@ -1286,7 +1282,7 @@ export default function GameplanGenerator() {
                 <Field label="Program Start Date" hint="Used to calculate weeks to test">
                   <input type="date" name="programStartDate" value={student.programStartDate} onChange={handleStudentChange} style={inp} />
                 </Field>
-                <Field label="Sessions Purchased">
+                <Field label="Hours Purchased" hint="Total tutoring hours contracted">
                   <input type="number" name="sessionsPurchased" value={student.sessionsPurchased} onChange={handleStudentChange} style={inp} placeholder="e.g. 20" />
                 </Field>
                 <Field label="Sessions Completed">
