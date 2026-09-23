@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getContractByToken, markContractSigned } from '../../../../lib/contracts';
 import { generateTutorContractPdf } from '../../../../lib/pdf-tutor-contract';
+import { generateTutorStudentContractPdf } from '../../../../lib/pdf-tutor-student-contract';
 import { generateStudentContractPdf } from '../../../../lib/pdf-student-contract';
 import { uploadPdfToDrive } from '../../../../lib/google-drive';
 
@@ -53,6 +54,8 @@ export async function POST(req) {
     let pdfBuffer;
     if (contract.type === 'tutor') {
       pdfBuffer = await generateTutorContractPdf(pdfData);
+    } else if (contract.type === 'tutor-student') {
+      pdfBuffer = await generateTutorStudentContractPdf(pdfData);
     } else {
       pdfBuffer = await generateStudentContractPdf(pdfData);
     }

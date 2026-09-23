@@ -5,25 +5,33 @@ import Link from 'next/link';
 
 const todayStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
+const TABS = [
+  { key: 'tutor', label: 'Tutor General Contract' },
+  { key: 'tutor-student', label: 'Tutor-Student Contract' },
+  { key: 'student', label: 'Student Contract' },
+];
+
 export default function ContractsPage() {
   const [tab, setTab] = useState('tutor');
-  const [step, setStep] = useState('form'); // form | preview | sending | sent | error
+  const [step, setStep] = useState('form');
   const [errorMsg, setErrorMsg] = useState('');
   const [sentTo, setSentTo] = useState('');
 
-  const [tutor, setTutor] = useState({
+  const [tutor, setTutor] = useState({ tutorName: '', tutorEmail: '', effectiveDate: todayStr });
+
+  const [tutorStudent, setTutorStudent] = useState({
     tutorName: '', tutorEmail: '', effectiveDate: todayStr,
-    assignedStudents: '',
+    studentName: '', targetScore: '', programWeeks: '',
+    sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '',
+    sessionDays: '', targetStartDate: '', targetEndDate: '',
   });
 
   const [student, setStudent] = useState({
-    effectiveDate: todayStr,
-    studentName: '', studentGrade: '',
+    effectiveDate: todayStr, studentName: '', studentGrade: '',
     startingScore: '', targetScore: '',
     parentName: '', parentEmail: '', parentPhone: '',
     programWeeks: '', sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '',
-    targetStartDate: '', targetTestDate: '',
-    totalInvestment: '', paymentStructure: 'Full Upfront',
+    targetStartDate: '', targetTestDate: '', totalInvestment: '', paymentStructure: 'Full Upfront',
   });
 
   function handleStudentChange(field, value) {
@@ -39,23 +47,49 @@ export default function ContractsPage() {
     });
   }
 
+  function handleTutorStudentChange(field, value) {
+    setTutorStudent(prev => {
+      const updated = { ...prev, [field]: value };
+      if (['programWeeks', 'sessionsPerWeek', 'sessionLengthHours'].includes(field)) {
+        const w = parseFloat(field === 'programWeeks' ? value : updated.programWeeks) || 0;
+        const s = parseFloat(field === 'sessionsPerWeek' ? value : updated.sessionsPerWeek) || 0;
+        const l = parseFloat(field === 'sessionLengthHours' ? value : updated.sessionLengthHours) || 0;
+        if (w && s && l) updated.totalHours = String(w * s * l);
+      }
+      return updated;
+    });
+  }
+
   async function handleSend() {
     setStep('sending');
-    const isTutor = tab === 'tutor';
-    const payload = isTutor
-      ? { type: 'tutor', recipientName: tutor.tutorName, recipientEmail: tutor.tutorEmail,
-          contractData: { tutorName: tutor.tutorName, effectiveDate: tutor.effectiveDate, assignedStudents: tutor.assignedStudents } }
-      : { type: 'student', recipientName: student.parentName, recipientEmail: student.parentEmail,
-          contractData: {
-            ...student,
-            startingScore: student.startingScore ? Number(student.startingScore) : null,
-            targetScore: student.targetScore ? Number(student.targetScore) : null,
-            programWeeks: student.programWeeks ? Number(student.programWeeks) : null,
-            sessionsPerWeek: student.sessionsPerWeek ? Number(student.sessionsPerWeek) : null,
-            sessionLengthHours: student.sessionLengthHours ? Number(student.sessionLengthHours) : null,
-            totalHours: student.totalHours ? Number(student.totalHours) : null,
-            totalInvestment: student.totalInvestment ? Number(student.totalInvestment) : null,
-          }};
+    let payload;
+    if (tab === 'tutor') {
+      payload = { type: 'tutor', recipientName: tutor.tutorName, recipientEmail: tutor.tutorEmail,
+        contractData: { tutorName: tutor.tutorName, effectiveDate: tutor.effectiveDate } };
+    } else if (tab === 'tutor-student') {
+      payload = { type: 'tutor-student', recipientName: tutorStudent.tutorName, recipientEmail: tutorStudent.tutorEmail,
+        contractData: {
+          ...tutorStudent,
+          targetScore: tutorStudent.targetScore ? Number(tutorStudent.targetScore) : null,
+          programWeeks: tutorStudent.programWeeks ? Number(tutorStudent.programWeeks) : null,
+          sessionsPerWeek: tutorStudent.sessionsPerWeek ? Number(tutorStudent.sessionsPerWeek) : null,
+          sessionLengthHours: tutorStudent.sessionLengthHours ? Number(tutorStudent.sessionLengthHours) : null,
+          totalHours: tutorStudent.totalHours ? Number(tutorStudent.totalHours) : null,
+        }};
+    } else {
+      payload = { type: 'student', recipientName: student.parentName, recipientEmail: student.parentEmail,
+        contractData: {
+          ...student,
+          startingScore: student.startingScore ? Number(student.startingScore) : null,
+          targetScore: student.targetScore ? Number(student.targetScore) : null,
+          programWeeks: student.programWeeks ? Number(student.programWeeks) : null,
+          sessionsPerWeek: student.sessionsPerWeek ? Number(student.sessionsPerWeek) : null,
+          sessionLengthHours: student.sessionLengthHours ? Number(student.sessionLengthHours) : null,
+          totalHours: student.totalHours ? Number(student.totalHours) : null,
+          totalInvestment: student.totalInvestment ? Number(student.totalInvestment) : null,
+        }};
+    }
+
     try {
       const res = await fetch('/api/contracts/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -63,7 +97,7 @@ export default function ContractsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send');
-      setSentTo(isTutor ? tutor.tutorEmail : student.parentEmail);
+      setSentTo(tab === 'student' ? student.parentEmail : (tab === 'tutor' ? tutor.tutorEmail : tutorStudent.tutorEmail));
       setStep('sent');
     } catch (err) {
       setErrorMsg(err.message);
@@ -73,13 +107,18 @@ export default function ContractsPage() {
 
   function reset() {
     setStep('form'); setErrorMsg(''); setSentTo('');
-    setTutor({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, assignedStudents: '' });
-    setStudent(s => ({ ...s, studentName: '', parentName: '', parentEmail: '', parentPhone: '', startingScore: '', targetScore: '', programWeeks: '', totalHours: '', targetStartDate: '', targetTestDate: '', totalInvestment: '' }));
+    setTutor({ tutorName: '', tutorEmail: '', effectiveDate: todayStr });
+    setTutorStudent({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, studentName: '', targetScore: '', programWeeks: '', sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '', sessionDays: '', targetStartDate: '', targetEndDate: '' });
   }
+
+  const canPreview = () => {
+    if (tab === 'tutor') return tutor.tutorName && tutor.tutorEmail;
+    if (tab === 'tutor-student') return tutorStudent.tutorName && tutorStudent.tutorEmail && tutorStudent.studentName && tutorStudent.targetScore;
+    return student.parentName && student.parentEmail && student.studentName && student.targetScore;
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f5f9', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-      {/* Top nav */}
       <div style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ background: '#0f172a', color: '#fff', fontWeight: 'bold', fontSize: 13, padding: '4px 10px', borderRadius: 4 }}>SC</div>
@@ -91,7 +130,7 @@ export default function ContractsPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 780, margin: '48px auto', padding: '0 24px' }}>
+      <div style={{ maxWidth: 820, margin: '48px auto', padding: '0 24px' }}>
 
         {step === 'sent' && (
           <div style={card}>
@@ -102,9 +141,7 @@ export default function ContractsPage() {
                 <p style={{ color: '#64748b', fontSize: 13, margin: '4px 0 0' }}>Signing link delivered to <strong>{sentTo}</strong></p>
               </div>
             </div>
-            <p style={{ color: '#475569', fontSize: 14, marginBottom: 20 }}>
-              Once signed, the PDF will be saved to Google Drive and the status will update on your dashboard.
-            </p>
+            <p style={{ color: '#475569', fontSize: 14, marginBottom: 20 }}>Once signed, the PDF will be saved to Google Drive and the status will update on your dashboard.</p>
             <div style={{ display: 'flex', gap: 12 }}>
               <button onClick={reset} style={primaryBtn}>Send Another Contract</button>
               <Link href="/contracts/dashboard" style={{ ...secondaryBtn, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>View Dashboard</Link>
@@ -121,46 +158,38 @@ export default function ContractsPage() {
         )}
 
         {step === 'preview' && (
-          <ContractPreview
-            tab={tab} tutor={tutor} student={student}
-            onBack={() => setStep('form')}
-            onSend={handleSend}
-          />
+          <ContractPreview tab={tab} tutor={tutor} tutorStudent={tutorStudent} student={student}
+            onBack={() => setStep('form')} onSend={handleSend} />
         )}
 
         {(step === 'form' || step === 'sending') && (
           <>
             <div style={{ marginBottom: 28 }}>
               <h1 style={{ fontSize: 26, fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>Send Contract</h1>
-              <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>Fill in the details below, preview the contract, then send a signing link via email.</p>
+              <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>Fill in the details, preview, then send a signing link via email.</p>
             </div>
 
-            {/* Tab switcher */}
             <div style={{ display: 'flex', gap: 0, marginBottom: 28, background: '#e2e8f0', padding: 4, borderRadius: 8, width: 'fit-content' }}>
-              {[['tutor', 'Tutor Contract'], ['student', 'Student Contract']].map(([t, label]) => (
-                <button key={t} onClick={() => { setTab(t); setStep('form'); }} style={{
-                  padding: '8px 22px', border: 'none', borderRadius: 6,
-                  background: tab === t ? '#fff' : 'transparent',
-                  color: tab === t ? '#0f172a' : '#64748b',
-                  fontWeight: tab === t ? '600' : '400',
-                  cursor: 'pointer', fontSize: 14,
-                  boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  transition: 'all 0.15s',
+              {TABS.map(({ key, label }) => (
+                <button key={key} onClick={() => { setTab(key); setStep('form'); }} style={{
+                  padding: '8px 20px', border: 'none', borderRadius: 6,
+                  background: tab === key ? '#fff' : 'transparent',
+                  color: tab === key ? '#0f172a' : '#64748b',
+                  fontWeight: tab === key ? '600' : '400',
+                  cursor: 'pointer', fontSize: 13,
+                  boxShadow: tab === key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.15s', whiteSpace: 'nowrap',
                 }}>{label}</button>
               ))}
             </div>
 
             <div style={card}>
-              {tab === 'tutor'
-                ? <TutorForm tutor={tutor} setTutor={setTutor} />
-                : <StudentForm student={student} onChange={handleStudentChange} />}
+              {tab === 'tutor' && <TutorForm tutor={tutor} setTutor={setTutor} />}
+              {tab === 'tutor-student' && <TutorStudentForm ts={tutorStudent} onChange={handleTutorStudentChange} />}
+              {tab === 'student' && <StudentForm student={student} onChange={handleStudentChange} />}
 
               <div style={{ marginTop: 28, paddingTop: 20, borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setStep('preview')}
-                  disabled={tab === 'tutor' ? !tutor.tutorName || !tutor.tutorEmail : !student.parentName || !student.parentEmail || !student.studentName || !student.targetScore}
-                  style={{ ...primaryBtn, opacity: (tab === 'tutor' ? !tutor.tutorName || !tutor.tutorEmail : !student.parentName || !student.parentEmail) ? 0.4 : 1 }}
-                >
+                <button onClick={() => setStep('preview')} disabled={!canPreview()} style={{ ...primaryBtn, opacity: canPreview() ? 1 : 0.4, cursor: canPreview() ? 'pointer' : 'not-allowed' }}>
                   Preview Contract →
                 </button>
               </div>
@@ -172,57 +201,78 @@ export default function ContractsPage() {
   );
 }
 
-// ─── Tutor Form ───────────────────────────────────────────────────────────────
+// ─── Forms ────────────────────────────────────────────────────────────────────
 
 function TutorForm({ tutor, setTutor }) {
-  const set = (f) => (e) => setTutor(p => ({ ...p, [f]: e.target.value }));
+  const set = f => e => setTutor(p => ({ ...p, [f]: e.target.value }));
   return (
     <div>
       <SectionLabel>Tutor Information</SectionLabel>
+      <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, marginTop: -8 }}>General onboarding contract — signed once when a tutor joins StudyCore.</p>
       <div style={grid2}>
         <Field label="Full Name" required><input style={inp} value={tutor.tutorName} onChange={set('tutorName')} required /></Field>
         <Field label="Email Address" required><input style={inp} type="email" value={tutor.tutorEmail} onChange={set('tutorEmail')} required /></Field>
         <Field label="Agreement Date"><input style={inp} value={tutor.effectiveDate} onChange={set('effectiveDate')} /></Field>
       </div>
-
-      <SectionLabel style={{ marginTop: 24 }}>Assigned Students</SectionLabel>
-      <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>List the student(s) this tutor is committed to for the duration of their program. Separate multiple names with commas.</p>
-      <Field label="Student Name(s)">
-        <input style={inp} value={tutor.assignedStudents} onChange={set('assignedStudents')} placeholder="e.g. Aryan Mani, John Smith" />
-      </Field>
     </div>
   );
 }
 
-// ─── Student Form ─────────────────────────────────────────────────────────────
+function TutorStudentForm({ ts, onChange }) {
+  const set = f => e => onChange(f, e.target.value);
+  return (
+    <div>
+      <SectionLabel>Tutor Information</SectionLabel>
+      <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 16, marginTop: -8 }}>Per-student assignment contract — signed each time a tutor accepts a new student.</p>
+      <div style={grid2}>
+        <Field label="Tutor Full Name" required><input style={inp} value={ts.tutorName} onChange={set('tutorName')} required /></Field>
+        <Field label="Tutor Email" required><input style={inp} type="email" value={ts.tutorEmail} onChange={set('tutorEmail')} required /></Field>
+        <Field label="Agreement Date"><input style={inp} value={ts.effectiveDate} onChange={set('effectiveDate')} /></Field>
+      </div>
+
+      <SectionLabel style={{ marginTop: 24 }}>Student Assignment</SectionLabel>
+      <div style={grid2}>
+        <Field label="Student Name" required><input style={inp} value={ts.studentName} onChange={set('studentName')} required /></Field>
+        <Field label="Target SAT Score" required><input style={inp} type="number" value={ts.targetScore} onChange={set('targetScore')} required /></Field>
+        <Field label="Program Weeks"><input style={inp} type="number" value={ts.programWeeks} onChange={set('programWeeks')} /></Field>
+        <Field label="Sessions Per Week"><input style={inp} type="number" value={ts.sessionsPerWeek} onChange={set('sessionsPerWeek')} /></Field>
+        <Field label="Session Length (hrs)"><input style={inp} type="number" value={ts.sessionLengthHours} onChange={set('sessionLengthHours')} /></Field>
+        <Field label="Total Hours"><input style={inp} type="number" value={ts.totalHours} onChange={set('totalHours')} /></Field>
+        <Field label="Session Days / Times" style={{ gridColumn: '1 / -1' }}>
+          <input style={inp} value={ts.sessionDays} onChange={set('sessionDays')} placeholder="e.g. Tuesdays & Thursdays at 5:00 PM PT" />
+        </Field>
+        <Field label="Program Start Date"><input style={inp} value={ts.targetStartDate} onChange={set('targetStartDate')} placeholder="e.g. September 7, 2026" /></Field>
+        <Field label="Program End Date"><input style={inp} value={ts.targetEndDate} onChange={set('targetEndDate')} placeholder="e.g. March 1, 2027" /></Field>
+      </div>
+    </div>
+  );
+}
 
 function StudentForm({ student, onChange }) {
-  const set = (f) => (e) => onChange(f, e.target.value);
+  const set = f => e => onChange(f, e.target.value);
   return (
     <div>
       <SectionLabel>Student Information</SectionLabel>
       <div style={grid2}>
         <Field label="Student Name" required><input style={inp} value={student.studentName} onChange={set('studentName')} required /></Field>
-        <Field label="Grade"><input style={inp} value={student.studentGrade} placeholder="e.g. 10th Grade (Sophomore)" onChange={set('studentGrade')} /></Field>
+        <Field label="Grade"><input style={inp} value={student.studentGrade} placeholder="e.g. 10th Grade" onChange={set('studentGrade')} /></Field>
         <Field label="Starting SAT Score"><input style={inp} type="number" value={student.startingScore} onChange={set('startingScore')} /></Field>
         <Field label="Target SAT Score" required><input style={inp} type="number" value={student.targetScore} onChange={set('targetScore')} required /></Field>
       </div>
-
       <SectionLabel style={{ marginTop: 24 }}>Parent / Guardian</SectionLabel>
       <div style={grid2}>
         <Field label="Parent Name" required><input style={inp} value={student.parentName} onChange={set('parentName')} required /></Field>
         <Field label="Parent Phone"><input style={inp} value={student.parentPhone} onChange={set('parentPhone')} /></Field>
         <Field label="Parent Email" required style={{ gridColumn: '1 / -1' }}><input style={inp} type="email" value={student.parentEmail} onChange={set('parentEmail')} required /></Field>
       </div>
-
       <SectionLabel style={{ marginTop: 24 }}>Program Details</SectionLabel>
       <div style={grid2}>
         <Field label="Program Weeks" required><input style={inp} type="number" value={student.programWeeks} onChange={set('programWeeks')} required /></Field>
         <Field label="Sessions Per Week"><input style={inp} type="number" value={student.sessionsPerWeek} onChange={set('sessionsPerWeek')} /></Field>
         <Field label="Session Length (hrs)"><input style={inp} type="number" value={student.sessionLengthHours} onChange={set('sessionLengthHours')} /></Field>
-        <Field label="Total Program Hours"><input style={inp} type="number" value={student.totalHours} onChange={(e) => onChange('totalHours', e.target.value)} /></Field>
+        <Field label="Total Hours"><input style={inp} type="number" value={student.totalHours} onChange={e => onChange('totalHours', e.target.value)} /></Field>
         <Field label="Target Start Date"><input style={inp} value={student.targetStartDate} placeholder="e.g. September 7, 2026" onChange={set('targetStartDate')} /></Field>
-        <Field label="Target Test Date"><input style={inp} value={student.targetTestDate} placeholder="e.g. March 2027 SAT administration" onChange={set('targetTestDate')} /></Field>
+        <Field label="Target Test Date"><input style={inp} value={student.targetTestDate} placeholder="e.g. March 2027 SAT" onChange={set('targetTestDate')} /></Field>
         <Field label="Total Investment ($)" required><input style={inp} type="number" value={student.totalInvestment} onChange={set('totalInvestment')} required /></Field>
         <Field label="Payment Structure">
           <select style={inp} value={student.paymentStructure} onChange={set('paymentStructure')}>
@@ -237,16 +287,15 @@ function StudentForm({ student, onChange }) {
   );
 }
 
-// ─── Contract Preview ─────────────────────────────────────────────────────────
+// ─── Preview ──────────────────────────────────────────────────────────────────
 
-function ContractPreview({ tab, tutor, student, onBack, onSend }) {
-  const isTutor = tab === 'tutor';
+function ContractPreview({ tab, tutor, tutorStudent, student, onBack, onSend }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: '700', color: '#0f172a', margin: '0 0 4px' }}>Contract Preview</h1>
-          <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Review the contract before sending the signing link.</p>
+          <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Review before sending the signing link.</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onBack} style={secondaryBtn}>← Edit</button>
@@ -255,21 +304,21 @@ function ContractPreview({ tab, tutor, student, onBack, onSend }) {
       </div>
 
       <div style={{ ...card, padding: 0 }}>
-        {/* Contract header */}
         <div style={{ background: '#0f172a', borderRadius: '8px 8px 0 0', padding: '28px 40px' }}>
           <p style={{ color: '#94a3b8', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', margin: '0 0 4px' }}>StudyCore LLC</p>
           <p style={{ color: '#fff', fontSize: 20, fontWeight: '700', margin: '0 0 4px' }}>
-            {isTutor ? 'Tutor Services Agreement' : 'SAT Tutoring Services Agreement'}
+            {tab === 'tutor' ? 'Tutor Services Agreement' : tab === 'tutor-student' ? 'Tutor-Student Assignment Agreement' : 'SAT Tutoring Services Agreement'}
           </p>
           <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>
-            {isTutor
-              ? `${tutor.effectiveDate} · ${tutor.tutorName}`
-              : `${student.effectiveDate} · ${student.parentName}, parent of ${student.studentName}`}
+            {tab === 'tutor' && `${tutor.effectiveDate} · ${tutor.tutorName}`}
+            {tab === 'tutor-student' && `${tutorStudent.effectiveDate} · ${tutorStudent.tutorName} → ${tutorStudent.studentName}`}
+            {tab === 'student' && `${student.effectiveDate} · ${student.parentName}, parent of ${student.studentName}`}
           </p>
         </div>
-
         <div style={{ padding: '32px 40px', fontFamily: 'Georgia, serif', fontSize: 14, lineHeight: 1.8, color: '#1e293b' }}>
-          {isTutor ? <TutorPreviewBody tutor={tutor} /> : <StudentPreviewBody student={student} />}
+          {tab === 'tutor' && <TutorPreviewBody tutor={tutor} />}
+          {tab === 'tutor-student' && <TutorStudentPreviewBody ts={tutorStudent} />}
+          {tab === 'student' && <StudentPreviewBody student={student} />}
         </div>
       </div>
     </div>
@@ -277,123 +326,97 @@ function ContractPreview({ tab, tutor, student, onBack, onSend }) {
 }
 
 function TutorPreviewBody({ tutor }) {
-  const students = tutor.assignedStudents ? tutor.assignedStudents.split(',').map(s => s.trim()).filter(Boolean) : [];
   return (
     <div>
-      <p>This Tutor Services Agreement is entered into as of <strong>{tutor.effectiveDate}</strong> by and between <strong>StudyCore LLC</strong>, a California limited liability company, and <strong>{tutor.tutorName}</strong> ("Tutor").</p>
+      <p>This Tutor Services Agreement is entered into as of <strong>{tutor.effectiveDate}</strong> by and between <strong>StudyCore LLC</strong> and <strong>{tutor.tutorName}</strong> ("Tutor").</p>
+      <PS title="01 — Independent Contractor"><p>Tutor is an independent contractor, not an employee. Tutor must have a verified SAT score of 1550 or higher.</p></PS>
+      <PS title="02 — Services & Obligations"><ul><li>Deliver all assigned sessions per schedule</li><li>Submit session reports after every session</li><li>Maintain professional communication with parents and StudyCore</li><li>Participate in weekly check-ins with Harshil Chilukuri</li><li>Lead office hours only when assigned by StudyCore</li></ul></PS>
+      <PS title="03 — Strike System"><ul><li><strong>1 Strike:</strong> 10+ minutes late to a session</li><li><strong>2 Strikes:</strong> Missing a session without notice (pay forfeited for that session)</li><li><strong>3 Strikes:</strong> Termination without pay for current pay period</li></ul></PS>
+      <PS title="04 — Payment"><p>$20.00/hour · 15th and last day of each month via Zelle · Same rate for sessions and office hours. If a student refunds within their first 3 sessions, Tutor is not paid for those sessions. If the refund is Tutor's fault, Tutor receives an additional strike.</p></PS>
+      <PS title="05 — Tax Responsibility"><p>Tutor is solely responsible for all taxes. StudyCore will issue a 1099-NEC for earnings of $600+.</p></PS>
+      <PS title="06 — Recording & Confidentiality"><p>Sessions recorded via Fathom. All student information strictly confidential. Obligation survives termination.</p></PS>
+      <PS title="07 — Intellectual Property"><p>All StudyCore materials are proprietary. No reproduction or use outside of StudyCore sessions.</p></PS>
+      <PS title="08 — Non-Solicitation"><p>No direct solicitation of StudyCore students for 12 months post-engagement. Violation: 6 months of Tutor's standard rate.</p></PS>
+      <PS title="09 — Termination"><p><strong>Tutor-Initiated:</strong> 2 weeks written notice (4 weeks if actively assigned to a student). <strong>For Cause:</strong> Immediate termination without pay for current pay period.</p></PS>
+      <PS title="10 — Dispute Resolution"><p>Informal resolution first. If unresolved in 30 days: binding arbitration in San Ramon, CA under AAA rules. California law.</p></PS>
+    </div>
+  );
+}
 
-      {students.length > 0 && (
-        <PreviewSection title="Assigned Students">
-          <p>Tutor commits to delivering services for the following student(s) for the duration of each student's program:</p>
-          <ul>{students.map((s, i) => <li key={i}>{s}</li>)}</ul>
-        </PreviewSection>
-      )}
-
-      <PreviewSection title="01 — Independent Contractor">
-        <p>Tutor is an independent contractor, not an employee. Tutor must have a verified SAT score of 1550 or higher.</p>
-      </PreviewSection>
-      <PreviewSection title="02 — Services & Obligations">
+function TutorStudentPreviewBody({ ts }) {
+  return (
+    <div>
+      <p>This Tutor-Student Assignment Agreement is entered into as of <strong>{ts.effectiveDate}</strong> by and between <strong>StudyCore LLC</strong> and <strong>{ts.tutorName}</strong> ("Tutor"), with respect to the tutoring of <strong>{ts.studentName}</strong> ("Student").</p>
+      <PS title="01 — Assignment Details">
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <tbody>
+            {[['Student', ts.studentName], ['Target SAT Score', ts.targetScore], ['Program Duration', ts.programWeeks ? `${ts.programWeeks} weeks` : '—'],
+              ['Sessions Per Week', ts.sessionsPerWeek], ['Session Length', ts.sessionLengthHours ? `${ts.sessionLengthHours} hr` : '—'],
+              ['Total Hours', ts.totalHours], ['Session Schedule', ts.sessionDays],
+              ['Program Start', ts.targetStartDate], ['Program End', ts.targetEndDate]].map(([l, v]) => (
+              <tr key={l}><td style={{ fontWeight: 'bold', padding: '3px 12px 3px 0', width: 160 }}>{l}</td><td style={{ padding: '3px 0', color: '#475569' }}>{v || '—'}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </PS>
+      <PS title="02 — Student Commitment">
+        <p>Tutor commits to remaining with {ts.studentName} for the full duration of the program ending <strong>{ts.targetEndDate || '—'}</strong>. Early departure is a serious breach of this Agreement.</p>
+      </PS>
+      <PS title="03 — Notice Requirements">
+        <p>If Tutor needs to end this assignment, Tutor must provide a minimum of <strong>four (4) weeks written notice</strong> to StudyCore. This extended notice period (beyond the standard 2-week general notice) is required to allow StudyCore adequate time to find a qualified replacement tutor and maintain continuity for the Student.</p>
+      </PS>
+      <PS title="04 — Consequences of Early Departure">
+        <p>If Tutor exits this assignment with less than 4 weeks written notice, the following consequences apply:</p>
         <ul>
-          <li>Deliver all assigned 1-on-1 sessions per schedule</li>
-          <li>Lead office hours only when assigned by StudyCore</li>
-          <li>Submit a session report after every session</li>
-          <li>Maintain professional communication with parents and StudyCore</li>
-          <li>Participate in weekly check-ins with Harshil Chilukuri</li>
-          <li>Monitor and report student progress proactively</li>
+          <li><strong>Pay Clawback:</strong> StudyCore reserves the right to withhold final payment and to formally demand repayment of the prior pay period's earnings from Tutor. This Agreement serves as legal evidence of that obligation.</li>
+          <li><strong>Refund Liability:</strong> If Student or their parent requests a refund directly caused by Tutor's early departure, Tutor owes StudyCore a fee equal to two (2) weeks of Tutor's standard rate ($20.00/hour × agreed weekly hours × 2 weeks) to cover the operational cost of replacement.</li>
+          <li><strong>Permanent Rehire Ban:</strong> Abandoning a student without proper notice permanently disqualifies Tutor from future work with StudyCore LLC.</li>
+          <li><strong>Legal Recourse:</strong> StudyCore reserves the right to pursue any amounts owed through applicable legal channels, including small claims court in San Ramon, California.</li>
         </ul>
-      </PreviewSection>
-      <PreviewSection title="03 — Student Commitment">
-        <p>Once assigned a student, Tutor must remain with that student for the full program duration. Early departure without StudyCore approval is a terminable offense.</p>
-      </PreviewSection>
-      <PreviewSection title="04 — Strike System">
-        <ul>
-          <li><strong>1 Strike:</strong> 10+ minutes late to a session</li>
-          <li><strong>2 Strikes:</strong> Missing a session without notice (pay forfeited for that session)</li>
-          <li><strong>3 Strikes:</strong> Termination without pay for current pay period</li>
-        </ul>
-      </PreviewSection>
-      <PreviewSection title="05 — Payment">
-        <p><strong>$20.00/hour</strong> · Paid on the 15th and last day of each month via Zelle · Same rate for sessions and office hours.</p>
-        <p>If a student refunds within their first 3 sessions, Tutor is not paid for those sessions. If the refund is Tutor's fault, Tutor receives an additional strike.</p>
-      </PreviewSection>
-      <PreviewSection title="06 — Tax Responsibility">
-        <p>Tutor is responsible for all taxes on income earned. StudyCore will issue a 1099-NEC for earnings of $600+.</p>
-      </PreviewSection>
-      <PreviewSection title="07 — Recording & Confidentiality">
-        <p>All sessions recorded via Fathom. Student information is strictly confidential. This obligation survives termination.</p>
-      </PreviewSection>
-      <PreviewSection title="08 — Intellectual Property">
-        <p>All StudyCore materials are proprietary. Tutor may not reproduce or use them outside of StudyCore sessions.</p>
-      </PreviewSection>
-      <PreviewSection title="09 — Non-Solicitation">
-        <p>No direct solicitation of StudyCore students for 12 months post-engagement. Violation: 6 months of Tutor's standard rate.</p>
-      </PreviewSection>
-      <PreviewSection title="10 — Termination">
-        <p><strong>Tutor-Initiated:</strong> 2 weeks written notice required.</p>
-        <p><strong>StudyCore-Initiated:</strong> Immediate for cause (3 strikes, misconduct, confidentiality breach, student abandonment). No pay for current period.</p>
-      </PreviewSection>
-      <PreviewSection title="11 — Dispute Resolution">
-        <p>Informal resolution first via support@studycore.net. If unresolved in 30 days: binding arbitration in San Ramon, CA under AAA rules. Governed by California law.</p>
-      </PreviewSection>
+      </PS>
+      <PS title="05 — Force Majeure Exception">
+        <p>The early departure consequences in Section 04 do not apply in cases of documented medical emergency, family emergency, or other force majeure events, at StudyCore's sole discretion.</p>
+      </PS>
+      <PS title="06 — Incorporated Terms">
+        <p>All terms of Tutor's General Tutor Services Agreement remain in full effect. This Assignment Agreement supplements, and does not replace, those terms.</p>
+      </PS>
+      <PS title="07 — Dispute Resolution">
+        <p>Governed by California law. Disputes via support@studycore.net, then binding arbitration in San Ramon, CA under AAA rules.</p>
+      </PS>
     </div>
   );
 }
 
 function StudentPreviewBody({ student }) {
-  const fmt = (n) => n ? `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
+  const fmt = n => n ? `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—';
   return (
     <div>
-      <p>This Agreement is entered into as of <strong>{student.effectiveDate}</strong> by and between <strong>StudyCore LLC</strong> and <strong>{student.parentName}</strong> ("Client"), parent or legal guardian of <strong>{student.studentName}</strong>.</p>
-
-      <PreviewSection title="01 — Parties & Program Details">
+      <p>This Agreement is entered into as of <strong>{student.effectiveDate}</strong> by and between <strong>StudyCore LLC</strong> and <strong>{student.parentName}</strong>, parent of <strong>{student.studentName}</strong>.</p>
+      <PS title="01 — Program Details">
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <tbody>
             {[['Student', student.studentName], ['Grade', student.studentGrade], ['Starting Score', student.startingScore], ['Target Score', student.targetScore],
-              ['Parent', student.parentName], ['Email', student.parentEmail], ['Phone', student.parentPhone]].map(([l, v]) => (
-              <tr key={l}><td style={{ fontWeight: 'bold', padding: '3px 12px 3px 0', width: 140, verticalAlign: 'top' }}>{l}</td><td style={{ padding: '3px 0' }}>{v || '—'}</td></tr>
+              ['Parent', student.parentName], ['Email', student.parentEmail], ['Phone', student.parentPhone],
+              ['Duration', student.programWeeks ? `${student.programWeeks} weeks` : '—'],
+              ['Sessions/Week', student.sessionsPerWeek], ['Total Hours', student.totalHours],
+              ['Start Date', student.targetStartDate], ['Test Date', student.targetTestDate]].map(([l, v]) => (
+              <tr key={l}><td style={{ fontWeight: 'bold', padding: '3px 12px 3px 0', width: 140 }}>{l}</td><td style={{ padding: '3px 0', color: '#475569' }}>{v || '—'}</td></tr>
             ))}
           </tbody>
         </table>
-      </PreviewSection>
-      <PreviewSection title="02 — Program Scope">
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-          <tbody>
-            {[['Duration', student.programWeeks ? `${student.programWeeks} weeks` : '—'],
-              ['Sessions/Week', student.sessionsPerWeek], ['Session Length', student.sessionLengthHours ? `${student.sessionLengthHours} hr` : '—'],
-              ['Total Hours', student.totalHours], ['Start Date', student.targetStartDate], ['Test Date', student.targetTestDate]].map(([l, v]) => (
-              <tr key={l}><td style={{ fontWeight: 'bold', padding: '3px 12px 3px 0', width: 140, verticalAlign: 'top' }}>{l}</td><td style={{ padding: '3px 0' }}>{v || '—'}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      </PreviewSection>
-      <PreviewSection title="03 — Payment">
-        <p><strong>Total:</strong> {fmt(student.totalInvestment)} · <strong>Structure:</strong> {student.paymentStructure}</p>
-        <p>No chargebacks except where StudyCore fails to deliver. Unauthorized chargebacks will be contested using this signed Agreement.</p>
-      </PreviewSection>
-      <PreviewSection title="04 — Performance Guarantee">
-        <p>If Student completes all {student.totalHours || '—'} sessions and remains Engaged but does not reach {student.targetScore || '—'} by {student.targetTestDate || '—'}, StudyCore will continue at no cost until the target is achieved.</p>
-      </PreviewSection>
-      <PreviewSection title="05 — Client Responsibilities">
-        <ul>
-          <li>24-hour notice to reschedule; max 2 reschedules/month</li>
-          <li>100% homework, drill, and practice test completion</li>
-          <li>Active engagement during all sessions</li>
-          <li>Reliable device and internet for online sessions</li>
-        </ul>
-      </PreviewSection>
-      <PreviewSection title="06 — Cancellation & Refund">
-        <p>Pause up to 2x per program (max 2 weeks each). Discontinuation: prorated refund based on sessions completed.</p>
-      </PreviewSection>
-      <PreviewSection title="07 — Non-Solicitation / Recording / IP / Disputes">
-        <p>No private solicitation of StudyCore tutors for 12 months. Sessions recorded via Fathom. All materials are StudyCore IP. Disputes: arbitration in San Ramon, CA under California law.</p>
-      </PreviewSection>
+      </PS>
+      <PS title="02 — Payment"><p><strong>Total:</strong> {fmt(student.totalInvestment)} · <strong>Structure:</strong> {student.paymentStructure}. No chargebacks except where StudyCore fails to deliver.</p></PS>
+      <PS title="03 — Performance Guarantee"><p>If Student completes all {student.totalHours || '—'} sessions, stays Engaged, and doesn't reach {student.targetScore || '—'} by {student.targetTestDate || '—'}, StudyCore works with Student for free until the target is achieved.</p></PS>
+      <PS title="04 — Client Responsibilities"><ul><li>24+ hours notice to reschedule; max 2 reschedules/month</li><li>100% homework, drill, and practice test completion</li><li>Active engagement during all sessions</li></ul></PS>
+      <PS title="05 — Cancellation"><p>Pause up to 2x per program (max 2 weeks each). Discontinuation: prorated refund based on sessions completed.</p></PS>
+      <PS title="06 — Non-Solicitation / Recording / IP / Disputes"><p>No private solicitation of tutors for 12 months. Sessions recorded via Fathom. All materials are StudyCore IP. Disputes: arbitration in San Ramon, CA, California law.</p></PS>
     </div>
   );
 }
 
-function PreviewSection({ title, children }) {
+function PS({ title, children }) {
   return (
-    <div style={{ marginTop: 22 }}>
+    <div style={{ marginTop: 20 }}>
       <p style={{ fontWeight: '700', fontSize: 13, color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: 6, marginBottom: 10 }}>{title}</p>
       {children}
     </div>

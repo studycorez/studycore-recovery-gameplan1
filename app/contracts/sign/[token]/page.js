@@ -45,6 +45,13 @@ export default function SignContractPage() {
   }
 
   const isTutor = contractInfo?.type === 'tutor';
+  const isTutorStudent = contractInfo?.type === 'tutor-student';
+
+  function contractTitle() {
+    if (isTutorStudent) return 'Tutor-Student Assignment Agreement';
+    if (isTutor) return 'Tutor Services Agreement';
+    return 'SAT Tutoring Services Agreement';
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: "'Segoe UI', Arial, sans-serif" }}>
@@ -103,7 +110,7 @@ export default function SignContractPage() {
             </div>
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '16px 20px', marginBottom: 20 }}>
               <p style={{ fontSize: 13, color: '#475569', margin: 0 }}>
-                A signed copy has been saved on file with StudyCore. By signing electronically, you have agreed to all terms of the {isTutor ? 'Tutor Services Agreement' : 'SAT Tutoring Services Agreement'} under the ESIGN Act.
+                A signed copy has been saved on file with StudyCore. By signing electronically, you have agreed to all terms of the {contractTitle()} under the ESIGN Act.
               </p>
             </div>
             {driveUrl && (
@@ -121,11 +128,11 @@ export default function SignContractPage() {
               <div>
                 <p style={{ color: '#94a3b8', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', margin: '0 0 4px' }}>StudyCore LLC</p>
                 <p style={{ color: '#fff', fontWeight: '700', fontSize: 17, margin: '0 0 2px' }}>
-                  {isTutor ? 'Tutor Services Agreement' : 'SAT Tutoring Services Agreement'}
+                  {contractTitle()}
                 </p>
                 <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>
                   Sent to {contractInfo.recipientName}
-                  {!isTutor && contractInfo.contractData?.studentName ? ` · Student: ${contractInfo.contractData.studentName}` : ''}
+                  {contractInfo.contractData?.studentName ? ` · Student: ${contractInfo.contractData.studentName}` : ''}
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -145,9 +152,11 @@ export default function SignContractPage() {
                 fontFamily: 'Georgia, serif',
                 paddingRight: 8,
               }}>
-                {isTutor
-                  ? <TutorContractText data={contractInfo.contractData} recipientName={contractInfo.recipientName} />
-                  : <StudentContractText data={contractInfo.contractData} />}
+                {isTutorStudent
+                  ? <TutorStudentContractText data={contractInfo.contractData} recipientName={contractInfo.recipientName} />
+                  : isTutor
+                    ? <TutorContractText data={contractInfo.contractData} recipientName={contractInfo.recipientName} />
+                    : <StudentContractText data={contractInfo.contractData} />}
               </div>
             </div>
 
@@ -166,7 +175,7 @@ export default function SignContractPage() {
                     type="text"
                     value={signedName}
                     onChange={e => setSignedName(e.target.value)}
-                    placeholder={isTutor ? 'Your full legal name' : (contractInfo.contractData?.parentName || 'Parent/Guardian full legal name')}
+                    placeholder={(isTutor || isTutorStudent) ? 'Your full legal name' : (contractInfo.contractData?.parentName || 'Parent/Guardian full legal name')}
                     required
                     disabled={state === 'signing'}
                     style={{ width: '100%', padding: '11px 14px', border: '1.5px solid #e2e8f0', borderRadius: 6, fontSize: 16, fontFamily: 'Georgia, serif', boxSizing: 'border-box', outline: 'none', color: '#0f172a', background: '#fafafa' }}
@@ -182,7 +191,7 @@ export default function SignContractPage() {
                     style={{ marginTop: 3, width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }}
                   />
                   <span style={{ fontSize: 13, color: '#475569', lineHeight: 1.6 }}>
-                    I confirm that I have read and understand all terms of this Agreement and agree to be legally bound by them. I acknowledge this electronic signature carries the same legal weight as a handwritten signature.
+                    I confirm that I have read and understand all terms of this Agreement{isTutorStudent ? ', including the Early Departure Consequences in Section 3,' : ''} and agree to be legally bound by them. I acknowledge this electronic signature carries the same legal weight as a handwritten signature.
                   </span>
                 </label>
 
@@ -298,6 +307,80 @@ function TutorContractText({ data, recipientName }) {
       </ContractSection>
       <ContractSection title="13 — Entire Agreement">
         <p>This Agreement supersedes all prior discussions. Modifications must be in writing and signed by both parties. If any provision is unenforceable, remaining provisions remain in full force.</p>
+      </ContractSection>
+    </div>
+  );
+}
+
+function TutorStudentContractText({ data, recipientName }) {
+  const d = data || {};
+  const name = recipientName || d.tutorName || '[Tutor Name]';
+  return (
+    <div>
+      <p>This Tutor-Student Assignment Agreement is entered into as of <strong>{d.effectiveDate || '—'}</strong> by and between <strong>StudyCore LLC</strong> and <strong>{name}</strong> ("Tutor"). This Agreement governs Tutor's assignment to student <strong>{d.studentName || '[Student Name]'}</strong> and supplements the General Tutor Services Agreement already signed.</p>
+
+      <ContractSection title="Assignment Details">
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <tbody>
+            {[
+              ['Student Name', d.studentName],
+              ['Target SAT Score', d.targetScore],
+              ['Program Duration', d.programWeeks ? `${d.programWeeks} weeks` : undefined],
+              ['Sessions Per Week', d.sessionsPerWeek],
+              ['Session Length', d.sessionLengthHours ? `${d.sessionLengthHours} hour(s)` : undefined],
+              ['Total Hours', d.totalHours],
+              ['Session Schedule', d.sessionDaysTimes],
+              ['Start Date', d.startDate],
+              ['End Date', d.endDate],
+            ].map(([l, v]) => (
+              <tr key={l} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ fontWeight: '700', padding: '5px 12px 5px 0', width: 160, verticalAlign: 'top' }}>{l}</td>
+                <td style={{ padding: '5px 0', color: '#475569' }}>{v || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </ContractSection>
+
+      <ContractSection title="01 — Acceptance of Assignment">
+        <p>By signing this Agreement, Tutor confirms acceptance of this assignment and commits to delivering all scheduled sessions for the full duration of the student's program as defined above.</p>
+      </ContractSection>
+
+      <ContractSection title="02 — Full-Program Commitment">
+        <p>Tutor commits to remaining with {d.studentName || 'the assigned student'} for the full duration of the program. This commitment runs from the Start Date through the End Date listed above. Personal scheduling conflicts or competing commitments do not qualify as exceptions. Exceptions may be granted only for documented force majeure or StudyCore-initiated reassignment.</p>
+      </ContractSection>
+
+      <ContractSection title="03 — Early Departure Consequences">
+        <div style={{ background: '#fff8f0', border: '1px solid #fed7aa', borderRadius: 4, padding: '10px 14px', marginBottom: 12 }}>
+          <p style={{ fontWeight: '700', color: '#c2410c', marginBottom: 6 }}>IMPORTANT — Read Carefully</p>
+          <p style={{ marginBottom: 0 }}>If Tutor departs from this assignment before the program End Date without prior written approval from StudyCore, all four consequences below apply.</p>
+        </div>
+        <p><strong>(a) Four-Week Notice Requirement:</strong> Tutor must provide a minimum of four (4) weeks written notice before ending this assignment. During the notice period, Tutor must continue delivering all scheduled sessions. Failure to provide adequate notice is a terminable offense.</p>
+        <p><strong>(b) Pay Clawback:</strong> StudyCore reserves the right to clawback payments made to Tutor in the most recently completed pay period. This may be applied against amounts owed to Tutor or demanded as repayment.</p>
+        <p><strong>(c) Refund Liability:</strong> If Tutor's early departure causes StudyCore to issue a refund to the student's family, Tutor is liable for up to two (2) weeks of Tutor's standard hourly rate. StudyCore will notify Tutor in writing before exercising this clause.</p>
+        <p><strong>(d) Permanent Rehire Ban:</strong> Tutor who abandons an assignment mid-program without written approval will be permanently ineligible for future engagement with StudyCore LLC in any capacity.</p>
+      </ContractSection>
+
+      <ContractSection title="04 — Session Obligations">
+        <ul>
+          <li>Deliver all sessions per the schedule listed above</li>
+          <li>Submit a session report within 24 hours of each session</li>
+          <li>Maintain professional communication with the student's family</li>
+          <li>Notify StudyCore immediately if any session must be rescheduled</li>
+          <li>Proactively monitor student progress toward the target score</li>
+        </ul>
+      </ContractSection>
+
+      <ContractSection title="05 — Payment for This Assignment">
+        <p>Compensation is governed by the General Tutor Services Agreement ($20.00/hour, paid on the 15th and last day of each month via Zelle). If the student discontinues within the first 3 sessions, Tutor will not receive payment for those sessions. If the discontinuation is due to Tutor's conduct, Tutor also receives one (1) strike.</p>
+      </ContractSection>
+
+      <ContractSection title="06 — Relationship to General Agreement">
+        <p>This Assignment Agreement supplements, and does not replace, the General Tutor Services Agreement. In the event of conflict, the more restrictive provision applies. All other General Agreement terms remain in full force.</p>
+      </ContractSection>
+
+      <ContractSection title="07 — Entire Assignment Agreement">
+        <p>This document constitutes the entire agreement for this specific student assignment. Modifications must be in writing and signed by both parties.</p>
       </ContractSection>
     </div>
   );
