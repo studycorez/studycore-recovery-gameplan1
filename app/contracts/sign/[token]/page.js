@@ -294,18 +294,21 @@ function TutorContractText({ data, recipientName }) {
       <ContractSection title="09 — Non-Solicitation">
         <p>Tutor may not directly hire, solicit, or engage any StudyCore student for private tutoring during this Agreement and for 12 months following its termination. Violation results in a fee equal to 6 months of Tutor's standard StudyCore rate.</p>
       </ContractSection>
-      <ContractSection title="10 — Termination">
+      <ContractSection title="10 — Non-Disparagement">
+        <p>Tutor agrees not to make any disparaging, defamatory, or negative statements about StudyCore LLC, its founders, employees, or services to current or former students, parents, or in any public forum (including but not limited to Google, Yelp, Reddit, or social media). Tutor also agrees not to encourage any student or parent to request a chargeback, dispute a payment, or file a complaint against StudyCore. This obligation survives termination of this Agreement.</p>
+      </ContractSection>
+      <ContractSection title="11 — Termination">
         <p><strong>Tutor-Initiated:</strong> 2 weeks written notice required. Tutor will be compensated for sessions delivered during the notice period.</p>
         <p><strong>StudyCore-Initiated for Cause:</strong> Immediate termination without pay for the current pay period for: 3-strike threshold, unprofessional conduct, confidentiality breach, student abandonment without approval, or other serious misconduct.</p>
         <p>Upon termination, Tutor must immediately cease use of all StudyCore materials.</p>
       </ContractSection>
-      <ContractSection title="11 — Limitation of Liability">
+      <ContractSection title="12 — Limitation of Liability">
         <p>StudyCore's total liability shall not exceed amounts paid to Tutor in the 60 days preceding the claim. StudyCore is not liable for indirect or consequential damages.</p>
       </ContractSection>
-      <ContractSection title="12 — Dispute Resolution & Governing Law">
+      <ContractSection title="13 — Dispute Resolution & Governing Law">
         <p>Disputes first via support@studycore.net. If unresolved in 30 days: binding arbitration in San Ramon, California under AAA rules. Governed by California law.</p>
       </ContractSection>
-      <ContractSection title="13 — Entire Agreement">
+      <ContractSection title="14 — Entire Agreement">
         <p>This Agreement supersedes all prior discussions. Modifications must be in writing and signed by both parties. If any provision is unenforceable, remaining provisions remain in full force.</p>
       </ContractSection>
     </div>

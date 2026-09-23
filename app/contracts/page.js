@@ -338,7 +338,24 @@ function TutorPreviewBody({ tutor }) {
       <PS title="07 — Intellectual Property"><p>All StudyCore materials are proprietary. No reproduction or use outside of StudyCore sessions.</p></PS>
       <PS title="08 — Non-Solicitation"><p>No direct solicitation of StudyCore students for 12 months post-engagement. Violation: 6 months of Tutor's standard rate.</p></PS>
       <PS title="09 — Termination"><p><strong>Tutor-Initiated:</strong> 2 weeks written notice (4 weeks if actively assigned to a student). <strong>For Cause:</strong> Immediate termination without pay for current pay period.</p></PS>
-      <PS title="10 — Dispute Resolution"><p>Informal resolution first. If unresolved in 30 days: binding arbitration in San Ramon, CA under AAA rules. California law.</p></PS>
+      <PS title="10 — Non-Disparagement"><p>Tutor agrees not to make any disparaging, defamatory, or negative statements about StudyCore LLC, its founders, employees, or services to current or former students, parents, or in any public forum (including but not limited to Google, Yelp, Reddit, or social media). Tutor also agrees not to encourage any student or parent to request a chargeback, dispute a payment, or file a complaint against StudyCore. This obligation survives termination of this Agreement.</p></PS>
+      <PS title="11 — Dispute Resolution"><p>Informal resolution first. If unresolved in 30 days: binding arbitration in San Ramon, CA under AAA rules. California law.</p></PS>
+
+      <div style={{ marginTop: 40, paddingTop: 24, borderTop: '2px solid #e2e8f0' }}>
+        <p style={{ fontWeight: '700', fontSize: 14, color: '#0f172a', marginBottom: 20 }}>SIGNATURES</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+          <div>
+            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
+            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Harshil Chilukuri · Date: ___________</p>
+          </div>
+          <div>
+            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
+            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>Tutor Signature (Electronic)</p>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>{`[Signed electronically via signing link]`}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -383,6 +400,22 @@ function TutorStudentPreviewBody({ ts }) {
       <PS title="07 — Dispute Resolution">
         <p>Governed by California law. Disputes via support@studycore.net, then binding arbitration in San Ramon, CA under AAA rules.</p>
       </PS>
+
+      <div style={{ marginTop: 40, paddingTop: 24, borderTop: '2px solid #e2e8f0' }}>
+        <p style={{ fontWeight: '700', fontSize: 14, color: '#0f172a', marginBottom: 20 }}>SIGNATURES</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+          <div>
+            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
+            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Harshil Chilukuri · Date: ___________</p>
+          </div>
+          <div>
+            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
+            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>Tutor Signature (Electronic)</p>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>{`[Signed electronically via signing link]`}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -410,6 +443,22 @@ function StudentPreviewBody({ student }) {
       <PS title="04 — Client Responsibilities"><ul><li>24+ hours notice to reschedule; max 2 reschedules/month</li><li>100% homework, drill, and practice test completion</li><li>Active engagement during all sessions</li></ul></PS>
       <PS title="05 — Cancellation"><p>Pause up to 2x per program (max 2 weeks each). Discontinuation: prorated refund based on sessions completed.</p></PS>
       <PS title="06 — Non-Solicitation / Recording / IP / Disputes"><p>No private solicitation of tutors for 12 months. Sessions recorded via Fathom. All materials are StudyCore IP. Disputes: arbitration in San Ramon, CA, California law.</p></PS>
+
+      <div style={{ marginTop: 40, paddingTop: 24, borderTop: '2px solid #e2e8f0' }}>
+        <p style={{ fontWeight: '700', fontSize: 14, color: '#0f172a', marginBottom: 20 }}>SIGNATURES</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+          <div>
+            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
+            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Harshil Chilukuri · Date: ___________</p>
+          </div>
+          <div>
+            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
+            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>Parent / Guardian Signature (Electronic)</p>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>{`[Signed electronically via signing link]`}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
