@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getContractByToken, markContractSigned } from '@/lib/contracts';
-import { generateTutorContractPdf } from '@/lib/pdf-tutor-contract';
-import { generateStudentContractPdf } from '@/lib/pdf-student-contract';
-import { uploadPdfToDrive } from '@/lib/google-drive';
+import { getContractByToken, markContractSigned } from '../../../../lib/contracts';
+import { generateTutorContractPdf } from '../../../../lib/pdf-tutor-contract';
+import { generateStudentContractPdf } from '../../../../lib/pdf-student-contract';
+import { uploadPdfToDrive } from '../../../../lib/google-drive';
 
 // GET /api/contracts/sign?token=xxx — fetch contract data for rendering
 export async function GET(req) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
-import { createContract } from '@/lib/contracts';
+import { createContract } from '../../../../lib/contracts';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
