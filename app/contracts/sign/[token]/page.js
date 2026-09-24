@@ -251,6 +251,7 @@ function TutorContractText({ data, recipientName }) {
         <p>Tutor is an independent contractor, not an employee of StudyCore LLC. No employment relationship is created by this Agreement. Tutor is not entitled to employee benefits of any kind.</p>
         <p><strong>SAT Score Accuracy:</strong> Tutor represents and warrants that they have achieved a verified SAT score of 1550 or higher and that all information provided to StudyCore is accurate and truthful. Tutor must provide official proof of score upon request. Misrepresentation of score or qualifications is grounds for immediate termination without pay and may result in legal action.</p>
         <p><strong>Background Check Consent:</strong> Tutor consents to StudyCore conducting a background check prior to being assigned to any student. Tutor represents that no criminal history exists that would disqualify them from working with minors. Tutor agrees to promptly disclose any relevant criminal history to StudyCore. Misrepresentation is grounds for immediate termination without pay.</p>
+        <p><strong>Competing Employment:</strong> During the term of this Agreement, Tutor agrees not to provide SAT, ACT, or standardized test preparation services for any competing tutoring company, platform, or agency. Independent tutoring outside of StudyCore is permitted provided it does not involve StudyCore-sourced students and does not interfere with Tutor's obligations hereunder.</p>
       </ContractSection>
       <ContractSection title="02 — Services & Obligations">
         <ul>
@@ -262,6 +263,7 @@ function TutorContractText({ data, recipientName }) {
           <li>Participate in weekly check-ins with Harshil Chilukuri</li>
           <li>Conduct all sessions with camera on, reliable internet, and via the platform designated by StudyCore (currently Zoom with Fathom recording)</li>
           <li><strong>Rescheduling:</strong> Must give 24+ hours notice. Rescheduling with less than 24 hours notice = 1 strike. With proper notice, max 3 reschedules per student per calendar month — a 4th reschedule in the same month = 1 strike.</li>
+          <li><strong>Makeup Sessions:</strong> If Tutor must cancel a scheduled session, Tutor must coordinate a makeup with the student as soon as possible — same calendar week where possible, following week at the latest. Failure to arrange a timely makeup = 1 strike.</li>
         </ul>
       </ContractSection>
       <ContractSection title="03 — Student Commitment">
@@ -467,6 +469,7 @@ function StudentContractText({ data }) {
 
       <ContractSection title="05 — Cancellation & Refund Policy">
         <p><strong>Program Pause:</strong> Up to 2 pauses per program, max 2 weeks each, with 48 hours written notice. Program end date extends accordingly.</p>
+        <p><strong>StudyCore-Initiated Cancellations:</strong> If StudyCore or the assigned tutor must cancel a scheduled session, StudyCore will notify Client as soon as possible and coordinate a makeup session at a mutually agreeable time at no additional cost.</p>
         {d.refundPolicy === 'prorated' ? (
           <p><strong>Discontinuation:</strong> If Client discontinues at any point, StudyCore will provide a prorated refund: (Total Investment − $200 Platform Fee) × (sessions remaining / total sessions). The $200 Platform Fee is non-refundable.</p>
         ) : (
