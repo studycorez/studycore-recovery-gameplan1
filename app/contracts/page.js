@@ -345,9 +345,13 @@ function TutorPreviewBody({ tutor }) {
         <p style={{ fontWeight: '700', fontSize: 14, color: '#0f172a', marginBottom: 20 }}>SIGNATURES</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
           <div>
-            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
-            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Harshil Chilukuri · Date: ___________</p>
+            <div style={{ marginBottom: 4, height: 36, display: 'flex', alignItems: 'flex-end' }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: 22, fontStyle: 'italic', color: '#0f172a' }}>Harshil Chilukuri</span>
+            </div>
+            <div style={{ borderTop: '1px solid #334155', paddingTop: 4 }}>
+              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
+              <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>Date: {todayStr}</p>
+            </div>
           </div>
           <div>
             <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
@@ -405,9 +409,13 @@ function TutorStudentPreviewBody({ ts }) {
         <p style={{ fontWeight: '700', fontSize: 14, color: '#0f172a', marginBottom: 20 }}>SIGNATURES</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
           <div>
-            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
-            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Harshil Chilukuri · Date: ___________</p>
+            <div style={{ marginBottom: 4, height: 36, display: 'flex', alignItems: 'flex-end' }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: 22, fontStyle: 'italic', color: '#0f172a' }}>Harshil Chilukuri</span>
+            </div>
+            <div style={{ borderTop: '1px solid #334155', paddingTop: 4 }}>
+              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
+              <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>Date: {todayStr}</p>
+            </div>
           </div>
           <div>
             <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
@@ -448,9 +456,13 @@ function StudentPreviewBody({ student }) {
         <p style={{ fontWeight: '700', fontSize: 14, color: '#0f172a', marginBottom: 20 }}>SIGNATURES</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
           <div>
-            <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
-            <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>Harshil Chilukuri · Date: ___________</p>
+            <div style={{ marginBottom: 4, height: 36, display: 'flex', alignItems: 'flex-end' }}>
+              <span style={{ fontFamily: 'Georgia, serif', fontSize: 22, fontStyle: 'italic', color: '#0f172a' }}>Harshil Chilukuri</span>
+            </div>
+            <div style={{ borderTop: '1px solid #334155', paddingTop: 4 }}>
+              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>StudyCore LLC Representative</p>
+              <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>Date: {todayStr}</p>
+            </div>
           </div>
           <div>
             <div style={{ borderBottom: '1px solid #334155', marginBottom: 6, height: 36 }} />
