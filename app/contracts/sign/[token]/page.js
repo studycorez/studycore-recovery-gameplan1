@@ -267,7 +267,7 @@ function TutorContractText({ data, recipientName }) {
         </ul>
       </ContractSection>
       <ContractSection title="03 — Student Commitment">
-        <p>Once Tutor accepts a student assignment, Tutor commits to remaining with that student for the full duration of the student's program. Early departure without prior written approval from StudyCore is a terminable offense and may affect final compensation. Exceptions may be made for force majeure or StudyCore-initiated reassignment.</p>
+        <p>Once Tutor accepts a student assignment, Tutor commits to remaining with that student for the full duration of the student's program. Early departure without prior written approval from StudyCore is a terminable offense and may affect final compensation. Exceptions are at StudyCore's sole discretion — no circumstance automatically qualifies. Written approval must be obtained before departing.</p>
       </ContractSection>
       <ContractSection title="04 — Performance Standards & Strike System">
         <ul>
@@ -353,7 +353,7 @@ function TutorStudentContractText({ data, recipientName }) {
       </ContractSection>
 
       <ContractSection title="02 — Full-Program Commitment">
-        <p>Tutor commits to remaining with {d.studentName || 'the assigned student'} for the full duration of the program. This commitment runs from the Start Date through the End Date listed above. Personal scheduling conflicts or competing commitments do not qualify as exceptions. Exceptions may be granted only for documented force majeure or StudyCore-initiated reassignment.</p>
+        <p>Tutor commits to remaining with {d.studentName || 'the assigned student'} for the full duration of the program. This commitment runs from the Start Date through the End Date listed above. Exceptions are considered solely at StudyCore's discretion — no category of circumstance automatically qualifies. Tutor must submit a written request, provide any documentation requested by StudyCore, and receive written approval <strong>before</strong> ending this assignment. Departure without prior written approval, regardless of stated reason, does not exempt Tutor from the consequences in Section 3.</p>
       </ContractSection>
 
       <ContractSection title="03 — Early Departure Consequences">
