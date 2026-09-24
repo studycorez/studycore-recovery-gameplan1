@@ -5,6 +5,17 @@ import Link from 'next/link';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_FULL = { Mon: 'Mondays', Tue: 'Tuesdays', Wed: 'Wednesdays', Thu: 'Thursdays', Fri: 'Fridays', Sat: 'Saturdays', Sun: 'Sundays' };
+const DURATION_OPTIONS = [
+  { value: 0.5, label: '30 min' },
+  { value: 0.75, label: '45 min' },
+  { value: 1, label: '1 hr' },
+  { value: 1.25, label: '1 hr 15 min' },
+  { value: 1.5, label: '1.5 hrs' },
+  { value: 1.75, label: '1 hr 45 min' },
+  { value: 2, label: '2 hrs' },
+  { value: 2.5, label: '2.5 hrs' },
+  { value: 3, label: '3 hrs' },
+];
 
 function formatTime12(t) {
   if (!t) return '';
@@ -14,32 +25,38 @@ function formatTime12(t) {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
+function formatDuration(d) {
+  return DURATION_OPTIONS.find(o => o.value === d)?.label || `${d} hrs`;
+}
+
 function DayTimePicker({ onChange }) {
   const [schedule, setSchedule] = useState({});
 
   function toggleDay(day) {
     setSchedule(prev => {
       const next = { ...prev };
-      if (next[day] !== undefined) { delete next[day]; } else { next[day] = '17:00'; }
+      if (next[day] !== undefined) { delete next[day]; } else { next[day] = { time: '17:00', duration: 1 }; }
       emitFormatted(next);
       return next;
     });
   }
 
-  function setTime(day, time) {
+  function setField(day, field, value) {
     setSchedule(prev => {
-      const next = { ...prev, [day]: time };
+      const next = { ...prev, [day]: { ...prev[day], [field]: value } };
       emitFormatted(next);
       return next;
     });
   }
 
   function emitFormatted(sched) {
-    const formatted = DAYS
-      .filter(d => sched[d] !== undefined)
-      .map(d => `${DAY_FULL[d]} at ${formatTime12(sched[d])} PT`)
+    const activeDays = DAYS.filter(d => sched[d] !== undefined);
+    const formatted = activeDays
+      .map(d => `${DAY_FULL[d]} at ${formatTime12(sched[d].time)} PT (${formatDuration(sched[d].duration)})`)
       .join(' · ');
+    const weeklyHours = activeDays.reduce((sum, d) => sum + (sched[d].duration || 0), 0);
     onChange('sessionDaysTimes', formatted);
+    onChange('weeklyHours', weeklyHours);
   }
 
   const selected = DAYS.filter(d => schedule[d] !== undefined);
@@ -60,14 +77,19 @@ function DayTimePicker({ onChange }) {
       {selected.map(day => (
         <div key={day} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
           <span style={{ width: 40, fontSize: 13, fontWeight: '600', color: '#0f172a' }}>{day}</span>
-          <input type="time" value={schedule[day]} onChange={e => setTime(day, e.target.value)}
+          <input type="time" value={schedule[day].time} onChange={e => setField(day, 'time', e.target.value)}
             style={{ ...inp, width: 'auto', padding: '7px 10px' }} />
-          <span style={{ fontSize: 12, color: '#94a3b8' }}>{formatTime12(schedule[day])} PT</span>
+          <span style={{ fontSize: 12, color: '#94a3b8' }}>{formatTime12(schedule[day].time)} PT</span>
+          <select value={schedule[day].duration} onChange={e => setField(day, 'duration', parseFloat(e.target.value))}
+            style={{ ...inp, width: 'auto', padding: '7px 10px', fontSize: 13 }}>
+            {DURATION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
         </div>
       ))}
       {selected.length > 0 && (
         <p style={{ fontSize: 12, color: '#64748b', marginTop: 8, marginBottom: 0 }}>
-          Will appear as: <em>{DAYS.filter(d => schedule[d] !== undefined).map(d => `${DAY_FULL[d]} at ${formatTime12(schedule[d])} PT`).join(' · ')}</em>
+          Schedule: <em>{selected.map(d => `${DAY_FULL[d]} at ${formatTime12(schedule[d].time)} PT (${formatDuration(schedule[d].duration)})`).join(' · ')}</em>
+          {' — '}<strong>{selected.reduce((s, d) => s + schedule[d].duration, 0)} hrs/week</strong>
         </p>
       )}
     </div>
@@ -93,7 +115,7 @@ export default function ContractsPage() {
   const [tutorStudent, setTutorStudent] = useState({
     tutorName: '', tutorEmail: '', effectiveDate: todayStr,
     studentName: '', targetScore: '', programWeeks: '',
-    sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '',
+    weeklyHours: 0, totalHours: '',
     sessionDaysTimes: '', targetStartDate: '', targetEndDate: '',
   });
 
@@ -121,11 +143,12 @@ export default function ContractsPage() {
   function handleTutorStudentChange(field, value) {
     setTutorStudent(prev => {
       const updated = { ...prev, [field]: value };
-      if (['programWeeks', 'sessionsPerWeek', 'sessionLengthHours'].includes(field)) {
-        const w = parseFloat(field === 'programWeeks' ? value : updated.programWeeks) || 0;
-        const s = parseFloat(field === 'sessionsPerWeek' ? value : updated.sessionsPerWeek) || 0;
-        const l = parseFloat(field === 'sessionLengthHours' ? value : updated.sessionLengthHours) || 0;
-        if (w && s && l) updated.totalHours = String(w * s * l);
+      if (['programWeeks', 'weeklyHours'].includes(field)) {
+        const weeks = parseFloat(field === 'programWeeks' ? value : updated.programWeeks) || 0;
+        const weekly = parseFloat(field === 'weeklyHours' ? value : updated.weeklyHours) || 0;
+        if (weeks > 0 && weekly > 0) {
+          updated.totalHours = String(Math.round(weeks * weekly * 10) / 10);
+        }
       }
       return updated;
     });
@@ -143,8 +166,6 @@ export default function ContractsPage() {
           ...tutorStudent,
           targetScore: tutorStudent.targetScore ? Number(tutorStudent.targetScore) : null,
           programWeeks: tutorStudent.programWeeks ? Number(tutorStudent.programWeeks) : null,
-          sessionsPerWeek: tutorStudent.sessionsPerWeek ? Number(tutorStudent.sessionsPerWeek) : null,
-          sessionLengthHours: tutorStudent.sessionLengthHours ? Number(tutorStudent.sessionLengthHours) : null,
           totalHours: tutorStudent.totalHours ? Number(tutorStudent.totalHours) : null,
         }};
     } else {
@@ -179,7 +200,7 @@ export default function ContractsPage() {
   function reset() {
     setStep('form'); setErrorMsg(''); setSentTo('');
     setTutor({ tutorName: '', tutorEmail: '', effectiveDate: todayStr });
-    setTutorStudent({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, studentName: '', targetScore: '', programWeeks: '', sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '', sessionDaysTimes: '', targetStartDate: '', targetEndDate: '' });
+    setTutorStudent({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, studentName: '', targetScore: '', programWeeks: '', weeklyHours: 0, totalHours: '', sessionDaysTimes: '', targetStartDate: '', targetEndDate: '' });
   }
 
   const canPreview = () => {
@@ -306,9 +327,22 @@ function TutorStudentForm({ ts, onChange }) {
         <Field label="Student Name" required><input style={inp} value={ts.studentName} onChange={set('studentName')} required /></Field>
         <Field label="Target SAT Score" required><input style={inp} type="number" value={ts.targetScore} onChange={set('targetScore')} required /></Field>
         <Field label="Program Weeks"><input style={inp} type="number" value={ts.programWeeks} onChange={set('programWeeks')} /></Field>
-        <Field label="Sessions Per Week"><input style={inp} type="number" value={ts.sessionsPerWeek} onChange={set('sessionsPerWeek')} /></Field>
-        <Field label="Session Length (hrs)"><input style={inp} type="number" value={ts.sessionLengthHours} onChange={set('sessionLengthHours')} /></Field>
-        <Field label="Total Hours"><input style={inp} type="number" value={ts.totalHours} onChange={set('totalHours')} /></Field>
+        <Field label="Total Hours">
+          <div style={{ position: 'relative' }}>
+            <input style={{ ...inp, paddingRight: 80 }} type="number" value={ts.totalHours} onChange={set('totalHours')}
+              placeholder={ts.weeklyHours && ts.programWeeks ? String(Math.round(ts.weeklyHours * parseFloat(ts.programWeeks) * 10) / 10) : ''} />
+            {ts.weeklyHours > 0 && ts.programWeeks && (
+              <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#94a3b8', pointerEvents: 'none' }}>
+                auto
+              </span>
+            )}
+          </div>
+          {ts.weeklyHours > 0 && ts.programWeeks && (
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>
+              {ts.weeklyHours} hrs/week × {ts.programWeeks} weeks = {Math.round(ts.weeklyHours * parseFloat(ts.programWeeks) * 10) / 10} hrs
+            </p>
+          )}
+        </Field>
         <Field label="Session Days / Times" style={{ gridColumn: '1 / -1' }}>
           <DayTimePicker onChange={onChange} />
         </Field>
@@ -445,7 +479,6 @@ function TutorStudentPreviewBody({ ts }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <tbody>
             {[['Student', ts.studentName], ['Target SAT Score', ts.targetScore], ['Program Duration', ts.programWeeks ? `${ts.programWeeks} weeks` : '—'],
-              ['Sessions Per Week', ts.sessionsPerWeek], ['Session Length', ts.sessionLengthHours ? `${ts.sessionLengthHours} hr` : '—'],
               ['Total Hours', ts.totalHours], ['Session Schedule', ts.sessionDaysTimes],
               ['Program Start', ts.targetStartDate], ['Program End', ts.targetEndDate]].map(([l, v]) => (
               <tr key={l}><td style={{ fontWeight: 'bold', padding: '3px 12px 3px 0', width: 160 }}>{l}</td><td style={{ padding: '3px 0', color: '#475569' }}>{v || '—'}</td></tr>
