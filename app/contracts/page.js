@@ -30,22 +30,28 @@ function formatDateLabel(isoStr) {
   return new Date(y, m - 1, d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function TestDatePicker({ value, onChange }) {
-  const isCustom = value && !TEST_DATES.find(d => d.value === value);
+function TestDatePicker({ value, onChange, onIsoChange }) {
+  const isCustom = value && !TEST_DATES.find(d => formatDateLabel(d.value) === value);
   const [showCustom, setShowCustom] = useState(isCustom);
 
   function handleSelect(e) {
     if (e.target.value === '__custom__') {
       setShowCustom(true);
       onChange('');
+      onIsoChange?.('');
     } else {
       setShowCustom(false);
       onChange(e.target.value ? formatDateLabel(e.target.value) : '');
+      onIsoChange?.(e.target.value || '');
     }
   }
 
-  const selectValue = showCustom ? '__custom__' : (TEST_DATES.find(d => formatDateLabel(d.value) === value)?.value || '');
+  function handleCustomDate(e) {
+    onChange(e.target.value ? formatDateLabel(e.target.value) : '');
+    onIsoChange?.(e.target.value || '');
+  }
 
+  const selectValue = showCustom ? '__custom__' : (TEST_DATES.find(d => formatDateLabel(d.value) === value)?.value || '');
   const groups = ['SAT', 'PSAT', 'ACT'];
 
   return (
@@ -62,8 +68,7 @@ function TestDatePicker({ value, onChange }) {
         <option value="__custom__">Custom date…</option>
       </select>
       {showCustom && (
-        <input type="date" style={{ ...inp, marginTop: 6 }}
-          onChange={e => onChange(e.target.value ? formatDateLabel(e.target.value) : '')} />
+        <input type="date" style={{ ...inp, marginTop: 6 }} onChange={handleCustomDate} />
       )}
     </div>
   );
@@ -182,7 +187,7 @@ export default function ContractsPage() {
     tutorName: '', tutorEmail: '', effectiveDate: todayStr,
     studentName: '', targetScore: '', programWeeks: '',
     weeklyHours: 0, totalHours: '',
-    sessionDaysTimes: '', targetStartDate: '', targetEndDate: '',
+    sessionDaysTimes: '', targetStartDate: '', targetEndDate: '', targetEndDateIso: '',
   });
 
   const [student, setStudent] = useState({
@@ -209,13 +214,28 @@ export default function ContractsPage() {
   function handleTutorStudentChange(field, value) {
     setTutorStudent(prev => {
       const updated = { ...prev, [field]: value };
-      if (['programWeeks', 'weeklyHours'].includes(field)) {
-        const weeks = parseFloat(field === 'programWeeks' ? value : updated.programWeeks) || 0;
-        const weekly = parseFloat(field === 'weeklyHours' ? value : updated.weeklyHours) || 0;
+
+      // Auto-calculate programWeeks from start date → test date
+      if (['targetStartDate', 'targetEndDateIso'].includes(field)) {
+        const startStr = field === 'targetStartDate' ? value : updated.targetStartDate;
+        const endIso = field === 'targetEndDateIso' ? value : updated.targetEndDateIso;
+        if (startStr && endIso) {
+          const start = new Date(startStr);
+          const end = new Date(endIso + 'T00:00:00');
+          const weeks = Math.round((end - start) / (7 * 24 * 60 * 60 * 1000));
+          if (weeks > 0) updated.programWeeks = String(weeks);
+        }
+      }
+
+      // Auto-calculate totalHours from programWeeks × weeklyHours
+      if (['programWeeks', 'weeklyHours', 'targetStartDate', 'targetEndDateIso'].includes(field)) {
+        const weeks = parseFloat(updated.programWeeks) || 0;
+        const weekly = parseFloat(updated.weeklyHours) || 0;
         if (weeks > 0 && weekly > 0) {
           updated.totalHours = String(Math.round(weeks * weekly * 10) / 10);
         }
       }
+
       return updated;
     });
   }
@@ -266,7 +286,7 @@ export default function ContractsPage() {
   function reset() {
     setStep('form'); setErrorMsg(''); setSentTo('');
     setTutor({ tutorName: '', tutorEmail: '', effectiveDate: todayStr });
-    setTutorStudent({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, studentName: '', targetScore: '', programWeeks: '', weeklyHours: 0, totalHours: '', sessionDaysTimes: '', targetStartDate: '', targetEndDate: '' });
+    setTutorStudent({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, studentName: '', targetScore: '', programWeeks: '', weeklyHours: 0, totalHours: '', sessionDaysTimes: '', targetStartDate: '', targetEndDate: '', targetEndDateIso: '' });
   }
 
   const canPreview = () => {
@@ -392,7 +412,13 @@ function TutorStudentForm({ ts, onChange }) {
       <div style={grid2}>
         <Field label="Student Name" required><input style={inp} value={ts.studentName} onChange={set('studentName')} required /></Field>
         <Field label="Target SAT Score" required><input style={inp} type="number" value={ts.targetScore} onChange={set('targetScore')} required /></Field>
-        <Field label="Program Weeks"><input style={inp} type="number" value={ts.programWeeks} onChange={set('programWeeks')} /></Field>
+        <Field label="Program Weeks">
+          <input style={inp} type="number" value={ts.programWeeks} onChange={set('programWeeks')}
+            placeholder={ts.targetEndDateIso && ts.targetStartDate ? 'auto' : ''} />
+          {ts.targetEndDateIso && ts.targetStartDate && (
+            <p style={{ fontSize: 11, color: '#94a3b8', margin: '4px 0 0' }}>Auto-calculated from start → test date. Edit to override.</p>
+          )}
+        </Field>
         <Field label="Total Hours">
           <div style={{ position: 'relative' }}>
             <input style={{ ...inp, paddingRight: 80 }} type="number" value={ts.totalHours} onChange={set('totalHours')}
@@ -414,7 +440,9 @@ function TutorStudentForm({ ts, onChange }) {
         </Field>
         <Field label="Program Start Date"><input style={inp} value={ts.targetStartDate} onChange={set('targetStartDate')} placeholder="e.g. September 7, 2026" /></Field>
         <Field label="Program End Date (Test Date)">
-          <TestDatePicker value={ts.targetEndDate} onChange={v => onChange('targetEndDate', v)} />
+          <TestDatePicker value={ts.targetEndDate}
+            onChange={v => onChange('targetEndDate', v)}
+            onIsoChange={v => onChange('targetEndDateIso', v)} />
         </Field>
       </div>
     </div>
