@@ -260,7 +260,7 @@ function TutorContractText({ data, recipientName }) {
           <li>Monitor student progress proactively and report concerns immediately</li>
           <li>Participate in weekly check-ins with Harshil Chilukuri</li>
           <li>Conduct all sessions with camera on, reliable internet, and via the platform designated by StudyCore (currently Zoom with Fathom recording)</li>
-          <li>Reschedule sessions with at least 24 hours notice. Maximum 2 reschedules per student per calendar month — a third reschedule in the same month counts as 1 strike.</li>
+          <li><strong>Rescheduling:</strong> Must give 24+ hours notice. Rescheduling with less than 24 hours notice = 1 strike. With proper notice, max 3 reschedules per student per calendar month — a 4th reschedule in the same month = 1 strike.</li>
         </ul>
       </ContractSection>
       <ContractSection title="03 — Student Commitment">
@@ -374,7 +374,7 @@ function TutorStudentContractText({ data, recipientName }) {
 
       <ContractSection title="05 — Payment for This Assignment">
         <p>Compensation is governed by the General Tutor Services Agreement ($20.00/hour, paid on the 15th and last day of each month via Zelle).</p>
-        <p><strong>Performance Bonus:</strong> If {d.studentName || 'Student'} achieves their target score of {d.targetScore || '—'} on the first official SAT taken after completing the program, Tutor will receive a one-time bonus of $50.00, paid in the following pay period.</p>
+        <p><strong>Performance Bonus & Rate Progression:</strong> If {d.studentName || 'Student'} achieves their target score of {d.targetScore || '—'} on the first official SAT after completing the program, Tutor will receive a one-time cash bonus of $200.00 and advance to the next rate tier per the Rate Progression in the General Agreement ($20 → $22 → $25 → $27 → $30 → $32 → $35/hr max). Both take effect the pay period following score confirmation.</p>
         <p><strong>Refund Clause:</strong> If the student discontinues within the first 3 sessions, Tutor will not receive payment for those sessions. If the discontinuation is due to Tutor's conduct, Tutor also receives one (1) strike.</p>
       </ContractSection>
 
