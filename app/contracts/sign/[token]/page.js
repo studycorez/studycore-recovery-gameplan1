@@ -250,6 +250,7 @@ function TutorContractText({ data, recipientName }) {
       <ContractSection title="01 — Independent Contractor Relationship">
         <p>Tutor is an independent contractor, not an employee of StudyCore LLC. No employment relationship is created by this Agreement. Tutor is not entitled to employee benefits of any kind.</p>
         <p><strong>SAT Score Accuracy:</strong> Tutor represents and warrants that they have achieved a verified SAT score of 1550 or higher and that all information provided to StudyCore is accurate and truthful. Tutor must provide official proof of score upon request. Misrepresentation of score or qualifications is grounds for immediate termination without pay and may result in legal action.</p>
+        <p><strong>Background Check Consent:</strong> Tutor consents to StudyCore conducting a background check prior to being assigned to any student. Tutor represents that no criminal history exists that would disqualify them from working with minors. Tutor agrees to promptly disclose any relevant criminal history to StudyCore. Misrepresentation is grounds for immediate termination without pay.</p>
       </ContractSection>
       <ContractSection title="02 — Services & Obligations">
         <ul>
@@ -285,6 +286,7 @@ function TutorContractText({ data, recipientName }) {
       </ContractSection>
       <ContractSection title="07 — Session Recording & Confidentiality">
         <p>All sessions are recorded via Fathom. By signing, Tutor consents to recording. Recordings are accessible only to the student, parent, and StudyCore team. All student information is strictly confidential. This obligation survives termination of the Agreement.</p>
+        <p><strong>Social Media & Public Posting:</strong> Tutor agrees not to post, share, or publish any information identifying or relating to StudyCore students — including names, academic performance, session content, or any identifiable details — on any social media platform, online forum, or public channel. General references to tutoring work that do not identify or expose any student are permitted. This obligation survives termination of this Agreement.</p>
       </ContractSection>
       <ContractSection title="08 — Intellectual Property">
         <p>All StudyCore materials are proprietary intellectual property of StudyCore LLC. Tutor may not reproduce, distribute, resell, or use them outside of StudyCore-assigned sessions without written consent.</p>
@@ -307,6 +309,7 @@ function TutorContractText({ data, recipientName }) {
         <p>Disputes first via support@studycore.net. If unresolved in 30 days: binding arbitration in San Ramon, California under AAA rules. Governed by California law.</p>
       </ContractSection>
       <ContractSection title="14 — Entire Agreement">
+        <p><strong>Written Notice:</strong> For purposes of this Agreement, "written notice" means a communication delivered via email to the contact addresses on file or via text message (SMS) to the phone numbers on file. Notice is deemed received upon successful delivery.</p>
         <p>This Agreement supersedes all prior discussions. Modifications must be in writing and signed by both parties. If any provision is unenforceable, remaining provisions remain in full force.</p>
       </ContractSection>
     </div>
@@ -416,6 +419,7 @@ function StudentContractText({ data }) {
             ))}
           </tbody>
         </table>
+        <p><strong>Written Notice:</strong> For purposes of this Agreement, "written notice" means a communication delivered via email to the addresses on file or via text message (SMS) to the phone numbers on file. Notice is deemed received upon successful delivery.</p>
       </ContractSection>
 
       <ContractSection title="02 — Program Scope & Schedule">
@@ -433,6 +437,7 @@ function StudentContractText({ data }) {
           </tbody>
         </table>
         <p style={{ marginTop: 10 }}>StudyCore will match Student with a vetted tutor (SAT 1550+) based on diagnostic results, strengths, weaknesses, and scheduling preferences.</p>
+        <p><strong>Additional Sessions:</strong> If Student wishes to purchase additional 1-on-1 sessions beyond those included in this Agreement (outside of the performance guarantee period), Client may do so at the standard per-session rate by written agreement with StudyCore. Any such addition will be governed by the terms of this Agreement.</p>
       </ContractSection>
 
       <ContractSection title="03 — Services Included">
@@ -453,6 +458,10 @@ function StudentContractText({ data }) {
         <strong>Platform Fee (Non-refundable):</strong> $200.00 — 1 year platform access from program start<br />
         <strong>Payment Structure:</strong> {d.paymentStructure || '—'}<br />
         <strong>Amount Due at Signing:</strong> {fmt(d.totalInvestment)}</p>
+        {d.paymentStructure === 'Payment Plan' && d.paymentPlan && (
+          <p><strong>Installment Schedule:</strong> {d.paymentPlan}</p>
+        )}
+        <p><strong>Payment Failure:</strong> If any scheduled payment fails, StudyCore will notify Client via email or text within 2 business days. Client has five (5) business days from notification to resolve the failed payment. Sessions will continue during this grace period. If unresolved after 5 business days, sessions will be paused until the account is brought current. StudyCore is not liable for delays in Student's preparation resulting from a program pause due to non-payment.</p>
         <p>All payments processed via Stripe. <strong>NO CHARGEBACKS</strong> except where StudyCore fails to deliver services. Unauthorized chargebacks will be formally contested using this signed Agreement.</p>
       </ContractSection>
 
@@ -499,6 +508,7 @@ function StudentContractText({ data }) {
 
       <ContractSection title="10 — Recording & Communications Consent">
         <p>Sessions recorded via Fathom. Client consents to program communications via email and SMS. Client optionally consents to anonymized score results used for marketing; revocable in writing at any time.</p>
+        <p><strong>Score Release Authorization:</strong> Client authorizes StudyCore LLC to review Student's official College Board score reports as needed to administer this Agreement, including verification of performance guarantee eligibility and program outcome tracking. Client agrees to provide StudyCore with the official score report following the Target SAT Test.</p>
       </ContractSection>
 
       <ContractSection title="11–16 — IP, Confidentiality, Liability, Force Majeure, Disputes, Entire Agreement">

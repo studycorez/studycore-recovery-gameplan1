@@ -195,7 +195,7 @@ export default function ContractsPage() {
     startingScore: '', targetScore: '',
     parentName: '', parentEmail: '', parentPhone: '',
     programWeeks: '', sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '',
-    targetStartDate: '', targetTestDate: '', totalInvestment: '', paymentStructure: 'Full Upfront',
+    targetStartDate: '', targetTestDate: '', totalInvestment: '', paymentStructure: 'Full Upfront', paymentPlan: '',
     refundPolicy: 'prorated', hasGuarantee: true,
   });
 
@@ -496,8 +496,16 @@ function StudentForm({ student, onChange }) {
             <option>Full Upfront</option>
             <option>50% Upfront, 50% at Program Start</option>
             <option>Monthly Installments</option>
+            <option value="Payment Plan">Payment Plan (Custom)</option>
           </select>
         </Field>
+        {student.paymentStructure === 'Payment Plan' && (
+          <Field label="Payment Plan Details" style={{ gridColumn: '1 / -1' }}>
+            <textarea style={{ ...inp, height: 80, resize: 'vertical' }} value={student.paymentPlan}
+              onChange={e => onChange('paymentPlan', e.target.value)}
+              placeholder="e.g. $500 due at signing · $500 due Oct 1, 2026 · $500 due Nov 1, 2026" />
+          </Field>
+        )}
         <Field label="Agreement Date" style={{ gridColumn: '1 / -1' }}><input style={inp} value={student.effectiveDate} onChange={set('effectiveDate')} /></Field>
       </div>
     </div>
@@ -547,13 +555,13 @@ function TutorPreviewBody({ tutor }) {
     <div>
       <p>This Tutor Services Agreement is entered into as of <strong>{tutor.effectiveDate}</strong> by and between <strong>StudyCore LLC</strong> and <strong>{tutor.tutorName}</strong> ("Tutor").</p>
       <PS title="01 — Independent Contractor">
-        <p>Tutor is an independent contractor, not an employee. <strong>SAT Score Accuracy:</strong> Tutor warrants their SAT score is 1550+ and all info provided is truthful. Must provide proof upon request. Misrepresentation = immediate termination without pay.</p>
+        <p>Tutor is an independent contractor, not an employee. <strong>SAT Score Accuracy:</strong> Tutor warrants their SAT score is 1550+ and all info provided is truthful. Must provide proof upon request. Misrepresentation = immediate termination without pay. <strong>Background Check Consent:</strong> Background check consent required prior to student assignment. Misrepresentation = immediate termination.</p>
       </PS>
       <PS title="02 — Services & Obligations"><ul><li>Deliver all assigned sessions per schedule</li><li>Submit session reports after every session</li><li>Respond to all messages from StudyCore and parents within 24 hours</li><li>Conduct sessions with camera on via Zoom with Fathom recording</li><li>Participate in weekly check-ins with Harshil Chilukuri</li><li>Lead office hours only when assigned by StudyCore</li><li><strong>Rescheduling:</strong> 24+ hours notice required. Less than 24hr notice = 1 strike. Max 3 reschedules per student per month with proper notice — 4th = 1 strike.</li></ul></PS>
       <PS title="03 — Strike System"><ul><li><strong>1 Strike:</strong> 10+ minutes late to a session</li><li><strong>2 Strikes:</strong> Missing a session without notice (pay forfeited for that session)</li><li><strong>3 Strikes:</strong> Termination without pay for current pay period</li></ul></PS>
       <PS title="04 — Payment & Rate Progression"><p><strong>Starting rate:</strong> $20.00/hour. <strong>Rate tiers</strong> (advances each time a student hits their target score on first SAT): $20 → $22 → $25 → $27 → $30 → $32 → $35/hr max. Pay schedule: 15th and last day of month via Zelle. Missed sessions without notice: pay forfeited. Refund clause: no pay for first 3 sessions if student discontinues; +1 strike if Tutor's fault.</p></PS>
       <PS title="05 — Tax Responsibility"><p>Tutor is solely responsible for all taxes. StudyCore will issue a 1099-NEC for earnings of $600+.</p></PS>
-      <PS title="06 — Recording & Confidentiality"><p>Sessions recorded via Fathom. All student information strictly confidential. Obligation survives termination.</p></PS>
+      <PS title="06 — Recording & Confidentiality"><p>Sessions recorded via Fathom. All student information strictly confidential. Obligation survives termination. <strong>Social Media & Public Posting:</strong> Tutor may not post any information identifying or relating to StudyCore students on any social media platform, online forum, or public channel. This obligation survives termination.</p></PS>
       <PS title="07 — Intellectual Property"><p>All StudyCore materials are proprietary. No reproduction or use outside of StudyCore sessions.</p></PS>
       <PS title="08 — Non-Solicitation"><p>No direct solicitation of StudyCore students for 12 months post-engagement. Violation: 6 months of Tutor's standard rate.</p></PS>
       <PS title="09 — Termination"><p><strong>Tutor-Initiated:</strong> 2 weeks written notice (4 weeks if actively assigned to a student). <strong>For Cause:</strong> Immediate termination without pay for current pay period.</p></PS>
@@ -679,6 +687,8 @@ function StudentPreviewBody({ student }) {
       </PS>
       <PS title="02 — Payment">
         <p><strong>Total:</strong> {fmt(student.totalInvestment)} · <strong>Platform Fee:</strong> $200 non-refundable (1 yr platform access) · <strong>Structure:</strong> {student.paymentStructure}. No chargebacks except where StudyCore fails to deliver.</p>
+        {student.paymentStructure === 'Payment Plan' && student.paymentPlan && <p><strong>Installment Schedule:</strong> {student.paymentPlan}</p>}
+        <p><strong>Payment Failure:</strong> 5-day grace period after notification. Sessions pause if unresolved.</p>
       </PS>
       {student.hasGuarantee ? (
         <PS title="03 — Performance Guarantee"><p>If Student completes all {student.totalHours || '—'} sessions, stays Engaged, and doesn't reach {student.targetScore || '—'} by {student.targetTestDate || '—'}, StudyCore provides up to <strong>10 additional 1-on-1 sessions</strong> at no additional cost until the target is achieved or the 10-session guarantee period is completed, whichever comes first.</p></PS>
