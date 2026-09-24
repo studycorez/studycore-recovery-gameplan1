@@ -196,6 +196,7 @@ export default function ContractsPage() {
     parentName: '', parentEmail: '', parentPhone: '',
     programWeeks: '', sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '',
     targetStartDate: '', targetTestDate: '', totalInvestment: '', paymentStructure: 'Full Upfront',
+    refundPolicy: 'prorated', hasGuarantee: true,
   });
 
   function handleStudentChange(field, value) {
@@ -453,7 +454,22 @@ function StudentForm({ student, onChange }) {
   const set = f => e => onChange(f, e.target.value);
   return (
     <div>
-      <SectionLabel>Student Information</SectionLabel>
+      <SectionLabel>Contract Template</SectionLabel>
+      <div style={grid2}>
+        <Field label="Refund Policy">
+          <select style={inp} value={student.refundPolicy} onChange={e => onChange('refundPolicy', e.target.value)}>
+            <option value="prorated">Pro-rated — Any Time</option>
+            <option value="3session">3 Sessions Only</option>
+          </select>
+        </Field>
+        <Field label="Performance Guarantee">
+          <select style={inp} value={student.hasGuarantee ? 'yes' : 'no'} onChange={e => onChange('hasGuarantee', e.target.value === 'yes')}>
+            <option value="yes">Included (10 additional sessions)</option>
+            <option value="no">Not Included</option>
+          </select>
+        </Field>
+      </div>
+      <SectionLabel style={{ marginTop: 24 }}>Student Information</SectionLabel>
       <div style={grid2}>
         <Field label="Student Name" required><input style={inp} value={student.studentName} onChange={set('studentName')} required /></Field>
         <Field label="Grade"><input style={inp} value={student.studentGrade} placeholder="e.g. 10th Grade" onChange={set('studentGrade')} /></Field>
@@ -661,10 +677,18 @@ function StudentPreviewBody({ student }) {
           </tbody>
         </table>
       </PS>
-      <PS title="02 — Payment"><p><strong>Total:</strong> {fmt(student.totalInvestment)} · <strong>Structure:</strong> {student.paymentStructure}. No chargebacks except where StudyCore fails to deliver.</p></PS>
-      <PS title="03 — Performance Guarantee"><p>If Student completes all {student.totalHours || '—'} sessions, stays Engaged, and doesn't reach {student.targetScore || '—'} by {student.targetTestDate || '—'}, StudyCore provides up to <strong>10 additional 1-on-1 sessions</strong> at no additional cost until the target is achieved or the 10-session guarantee period is completed, whichever comes first.</p></PS>
+      <PS title="02 — Payment">
+        <p><strong>Total:</strong> {fmt(student.totalInvestment)} · <strong>Platform Fee:</strong> $200 non-refundable (1 yr platform access) · <strong>Structure:</strong> {student.paymentStructure}. No chargebacks except where StudyCore fails to deliver.</p>
+      </PS>
+      {student.hasGuarantee ? (
+        <PS title="03 — Performance Guarantee"><p>If Student completes all {student.totalHours || '—'} sessions, stays Engaged, and doesn't reach {student.targetScore || '—'} by {student.targetTestDate || '—'}, StudyCore provides up to <strong>10 additional 1-on-1 sessions</strong> at no additional cost until the target is achieved or the 10-session guarantee period is completed, whichever comes first.</p></PS>
+      ) : (
+        <PS title="03 — No Performance Guarantee"><p>This contract does not include a performance guarantee. StudyCore will deliver all services described but makes no guarantee of a specific score outcome.</p></PS>
+      )}
       <PS title="04 — Client Responsibilities"><ul><li>24+ hours notice to reschedule; max 2 reschedules/month — additional reschedules forfeit the session</li><li>100% homework, drill, and practice test completion (tracked via tutor session reports — Performance Guarantee void if below 100%)</li><li>Active engagement during all sessions</li><li><strong>SAT Registration:</strong> Register Student for {student.targetTestDate || 'the target SAT'} within 4 weeks of program start and send StudyCore confirmation. Failure to register voids the Performance Guarantee.</li></ul></PS>
-      <PS title="05 — Cancellation"><p>Pause up to 2x per program (max 2 weeks each). Discontinuation: prorated refund based on sessions completed.</p></PS>
+      <PS title="05 — Cancellation">
+        <p>Pause up to 2x per program (max 2 weeks each). $200 platform fee is non-refundable. {student.refundPolicy === 'prorated' ? 'Discontinuation: pro-rated refund on unused sessions (Total − $200) × (remaining/total).' : 'Discontinuation: full program fee refund only within first 3 sessions. No refund after session 3.'}</p>
+      </PS>
       <PS title="06 — Non-Solicitation / Recording / IP / Disputes"><p>No private solicitation of tutors for 12 months. Sessions recorded via Fathom. All materials are StudyCore IP. Disputes: arbitration in San Ramon, CA, California law.</p></PS>
 
       <div style={{ marginTop: 40, paddingTop: 24, borderTop: '2px solid #e2e8f0' }}>

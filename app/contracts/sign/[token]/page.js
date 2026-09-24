@@ -450,6 +450,7 @@ function StudentContractText({ data }) {
 
       <ContractSection title="04 — Payment Terms">
         <p><strong>Total Program Investment:</strong> {fmt(d.totalInvestment)}<br />
+        <strong>Platform Fee (Non-refundable):</strong> $200.00 — 1 year platform access from program start<br />
         <strong>Payment Structure:</strong> {d.paymentStructure || '—'}<br />
         <strong>Amount Due at Signing:</strong> {fmt(d.totalInvestment)}</p>
         <p>All payments processed via Stripe. <strong>NO CHARGEBACKS</strong> except where StudyCore fails to deliver services. Unauthorized chargebacks will be formally contested using this signed Agreement.</p>
@@ -457,21 +458,32 @@ function StudentContractText({ data }) {
 
       <ContractSection title="05 — Cancellation & Refund Policy">
         <p><strong>Program Pause:</strong> Up to 2 pauses per program, max 2 weeks each, with 48 hours written notice. Program end date extends accordingly.</p>
-        <p><strong>Discontinuation:</strong> Prorated refund based on 1-on-1 sessions completed to date of discontinuation.</p>
+        {d.refundPolicy === 'prorated' ? (
+          <p><strong>Discontinuation:</strong> If Client discontinues at any point, StudyCore will provide a prorated refund: (Total Investment − $200 Platform Fee) × (sessions remaining / total sessions). The $200 Platform Fee is non-refundable.</p>
+        ) : (
+          <p><strong>Discontinuation:</strong> If Client discontinues within the first three (3) 1-on-1 sessions, StudyCore will refund the program fee (Total Investment minus the non-refundable $200 Platform Fee). After session 3, no refund is available. The $200 Platform Fee is non-refundable.</p>
+        )}
       </ContractSection>
 
-      <ContractSection title="06 — Performance Guarantee">
-        <p>If Student completes all {d.totalHours || '—'} sessions, remains Engaged throughout the program, completes all assigned work, and does not achieve {d.targetScore || '—'}+ on the Target SAT Test ({d.targetTestDate || '—'}), StudyCore will continue working with Student at no additional cost — through up to <strong>ten (10) additional 1-on-1 sessions</strong> — until {d.targetScore || '—'}+ is achieved or the ten-session guarantee period has been completed, whichever comes first.</p>
-        <p><strong>Eligibility requires:</strong> 100% session attendance, 100% homework/practice test completion, full compliance with Section 07.</p>
-      </ContractSection>
+      {d.hasGuarantee ? (
+        <ContractSection title="06 — Performance Guarantee">
+          <p>If Student completes all {d.totalHours || '—'} sessions, remains Engaged throughout the program, completes all assigned work, and does not achieve {d.targetScore || '—'}+ on the Target SAT Test ({d.targetTestDate || '—'}), StudyCore will continue working with Student at no additional cost — through up to <strong>ten (10) additional 1-on-1 sessions</strong> — until {d.targetScore || '—'}+ is achieved or the ten-session guarantee period has been completed, whichever comes first.</p>
+          <p><strong>Eligibility:</strong> Student must attend all sessions, remain Engaged, complete 100% of assigned homework and practice tests, and fully comply with all Client Responsibilities in Section 07.</p>
+        </ContractSection>
+      ) : (
+        <ContractSection title="06 — No Performance Guarantee">
+          <p>This program does not include a performance guarantee. StudyCore will deliver all services described in this Agreement and work diligently toward Student's target score of {d.targetScore || '—'}, but makes no guarantee that Student will achieve their target SAT score.</p>
+        </ContractSection>
+      )}
 
       <ContractSection title="07 — Client Responsibilities">
+        <p>{d.hasGuarantee ? 'Client and Student agree to the following. Full compliance is required to qualify for the Performance Guarantee in Section 06.' : 'Client and Student agree to the following.'}</p>
         <ul>
           <li>24+ hours notice to reschedule; max 2 reschedules/month — additional reschedules forfeit the session</li>
           <li>Remain Engaged during all sessions</li>
-          <li>Complete 100% of assigned homework, practice tests, and drills. StudyCore tracks compliance via tutor session reports — Performance Guarantee is void if compliance falls below 100%.</li>
+          <li>Complete 100% of assigned homework, practice tests, and drills.{d.hasGuarantee ? ' StudyCore tracks compliance via tutor session reports — Performance Guarantee is void if compliance falls below 100%.' : ''}</li>
           <li>Complete practice tests independently under timed conditions</li>
-          <li><strong>SAT Registration:</strong> Register Student for the Target SAT Test ({d.targetTestDate || '—'}) within 4 weeks of program start and provide StudyCore with confirmation. Failure to register within this window voids the Performance Guarantee.</li>
+          <li><strong>SAT Registration:</strong> Register Student for the Target SAT Test ({d.targetTestDate || '—'}) within 4 weeks of program start and provide StudyCore with confirmation.{d.hasGuarantee ? ' Failure to register within this window voids the Performance Guarantee.' : ''}</li>
           <li>Reliable internet and device for online sessions</li>
           <li>Keep payment method on file current</li>
         </ul>
