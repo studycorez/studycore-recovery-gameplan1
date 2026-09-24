@@ -362,13 +362,14 @@ function TutorStudentContractText({ data, recipientName }) {
         <p><strong>(d) Permanent Rehire Ban:</strong> Tutor who abandons an assignment mid-program without written approval will be permanently ineligible for future engagement with StudyCore LLC in any capacity.</p>
       </ContractSection>
 
-      <ContractSection title="04 — Session Obligations">
+      <ContractSection title="04 — Session Obligations & Reporting">
         <ul>
           <li>Deliver all sessions per the schedule listed above</li>
-          <li>Submit a session report within 24 hours of each session</li>
+          <li>Submit a session report within 24 hours of each session documenting content covered, student engagement, and homework assigned</li>
           <li>Maintain professional communication with the student's family</li>
           <li>Notify StudyCore immediately if any session must be rescheduled</li>
-          <li>Proactively monitor student progress toward the target score</li>
+          <li><strong>Immediate Escalation Required:</strong> Notify StudyCore within 24 hours if: (a) student fails to complete assigned homework, (b) student appears disengaged or unresponsive during sessions, (c) any academic, motivational, or behavioral concern arises that may affect progress toward target score, or (d) any other issue that could impact the program outcome. Failure to escalate known issues is grounds for a strike.</li>
+          <li>Participate in weekly check-ins with the StudyCore team to review {d.studentName || "this student"}'s progress, flag concerns, and align on next steps</li>
         </ul>
       </ContractSection>
 

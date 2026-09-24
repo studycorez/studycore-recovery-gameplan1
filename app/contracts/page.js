@@ -385,10 +385,17 @@ function TutorStudentPreviewBody({ ts }) {
       <PS title="02 — Student Commitment">
         <p>Tutor commits to remaining with {ts.studentName} for the full duration of the program ending <strong>{ts.targetEndDate || '—'}</strong>. Early departure is a serious breach of this Agreement.</p>
       </PS>
-      <PS title="03 — Notice Requirements">
-        <p>If Tutor needs to end this assignment, Tutor must provide a minimum of <strong>four (4) weeks written notice</strong> to StudyCore. This extended notice period (beyond the standard 2-week general notice) is required to allow StudyCore adequate time to find a qualified replacement tutor and maintain continuity for the Student.</p>
+      <PS title="03 — Session Obligations & Reporting">
+        <ul>
+          <li>Submit session report within 24 hours of each session (content, engagement, homework assigned)</li>
+          <li><strong>Immediate Escalation:</strong> Notify StudyCore within 24 hours if student misses homework, is disengaged/unresponsive, or if any concern arises that could affect program outcome. Failure to escalate = strike.</li>
+          <li>Weekly check-ins with StudyCore team to review {ts.studentName || "this student"}'s progress and flag concerns</li>
+        </ul>
       </PS>
-      <PS title="04 — Consequences of Early Departure">
+      <PS title="04 — Notice Requirements">
+        <p>If Tutor needs to end this assignment, Tutor must provide a minimum of <strong>four (4) weeks written notice</strong> to StudyCore.</p>
+      </PS>
+      <PS title="05 — Consequences of Early Departure">
         <p>If Tutor exits this assignment with less than 4 weeks written notice, the following consequences apply:</p>
         <ul>
           <li><strong>Pay Clawback:</strong> StudyCore reserves the right to withhold final payment and to formally demand repayment of the prior pay period's earnings from Tutor. This Agreement serves as legal evidence of that obligation.</li>
@@ -397,7 +404,7 @@ function TutorStudentPreviewBody({ ts }) {
           <li><strong>Legal Recourse:</strong> StudyCore reserves the right to pursue any amounts owed through applicable legal channels, including small claims court in San Ramon, California.</li>
         </ul>
       </PS>
-      <PS title="05 — Force Majeure Exception">
+      <PS title="06 — Force Majeure Exception">
         <p>The early departure consequences in Section 04 do not apply in cases of documented medical emergency, family emergency, or other force majeure events, at StudyCore's sole discretion.</p>
       </PS>
       <PS title="06 — Payment & Performance Bonus">
