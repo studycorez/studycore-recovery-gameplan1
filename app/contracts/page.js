@@ -3,6 +3,72 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+const TEST_DATES = [
+  { group: 'SAT', value: '2026-10-03', label: 'SAT — Oct 3, 2026' },
+  { group: 'PSAT', value: '2026-10-17', label: 'PSAT/NMSQT — Oct 17, 2026' },
+  { group: 'SAT', value: '2026-11-07', label: 'SAT — Nov 7, 2026' },
+  { group: 'ACT', value: '2026-10-24', label: 'ACT — Oct 24, 2026' },
+  { group: 'SAT', value: '2026-12-05', label: 'SAT — Dec 5, 2026' },
+  { group: 'ACT', value: '2026-12-12', label: 'ACT — Dec 12, 2026' },
+  { group: 'ACT', value: '2027-02-07', label: 'ACT — Feb 7, 2027' },
+  { group: 'SAT', value: '2027-03-06', label: 'SAT — Mar 6, 2027' },
+  { group: 'ACT', value: '2027-04-17', label: 'ACT — Apr 17, 2027' },
+  { group: 'SAT', value: '2027-05-01', label: 'SAT — May 1, 2027' },
+  { group: 'SAT', value: '2027-06-05', label: 'SAT — Jun 5, 2027' },
+  { group: 'ACT', value: '2027-06-12', label: 'ACT — Jun 12, 2027' },
+  { group: 'ACT', value: '2027-07-17', label: 'ACT — Jul 17, 2027' },
+  { group: 'SAT', value: '2027-08-28', label: 'SAT — Aug 28, 2027' },
+  { group: 'SAT', value: '2027-09-18', label: 'SAT — Sep 18, 2027' },
+  { group: 'SAT', value: '2027-10-02', label: 'SAT — Oct 2, 2027' },
+  { group: 'SAT', value: '2027-11-06', label: 'SAT — Nov 6, 2027' },
+  { group: 'SAT', value: '2027-12-04', label: 'SAT — Dec 4, 2027' },
+];
+
+function formatDateLabel(isoStr) {
+  if (!isoStr) return '';
+  const [y, m, d] = isoStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function TestDatePicker({ value, onChange }) {
+  const isCustom = value && !TEST_DATES.find(d => d.value === value);
+  const [showCustom, setShowCustom] = useState(isCustom);
+
+  function handleSelect(e) {
+    if (e.target.value === '__custom__') {
+      setShowCustom(true);
+      onChange('');
+    } else {
+      setShowCustom(false);
+      onChange(e.target.value ? formatDateLabel(e.target.value) : '');
+    }
+  }
+
+  const selectValue = showCustom ? '__custom__' : (TEST_DATES.find(d => formatDateLabel(d.value) === value)?.value || '');
+
+  const groups = ['SAT', 'PSAT', 'ACT'];
+
+  return (
+    <div>
+      <select value={selectValue} onChange={handleSelect} style={inp}>
+        <option value="">— Select a test date —</option>
+        {groups.map(g => (
+          <optgroup key={g} label={g}>
+            {TEST_DATES.filter(d => d.group === g).map(d => (
+              <option key={d.value} value={d.value}>{d.label}</option>
+            ))}
+          </optgroup>
+        ))}
+        <option value="__custom__">Custom date…</option>
+      </select>
+      {showCustom && (
+        <input type="date" style={{ ...inp, marginTop: 6 }}
+          onChange={e => onChange(e.target.value ? formatDateLabel(e.target.value) : '')} />
+      )}
+    </div>
+  );
+}
+
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_FULL = { Mon: 'Mondays', Tue: 'Tuesdays', Wed: 'Wednesdays', Thu: 'Thursdays', Fri: 'Fridays', Sat: 'Saturdays', Sun: 'Sundays' };
 const DURATION_OPTIONS = [
@@ -347,7 +413,9 @@ function TutorStudentForm({ ts, onChange }) {
           <DayTimePicker onChange={onChange} />
         </Field>
         <Field label="Program Start Date"><input style={inp} value={ts.targetStartDate} onChange={set('targetStartDate')} placeholder="e.g. September 7, 2026" /></Field>
-        <Field label="Program End Date"><input style={inp} value={ts.targetEndDate} onChange={set('targetEndDate')} placeholder="e.g. March 1, 2027" /></Field>
+        <Field label="Program End Date (Test Date)">
+          <TestDatePicker value={ts.targetEndDate} onChange={v => onChange('targetEndDate', v)} />
+        </Field>
       </div>
     </div>
   );
