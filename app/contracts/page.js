@@ -404,7 +404,7 @@ function TutorStudentPreviewBody({ ts }) {
         <p>Rate per General Agreement. <strong>Performance Bonus & Rate Progression:</strong> If {ts.studentName || 'Student'} hits target score of {ts.targetScore || '—'} on their first SAT after the program, Tutor receives a $200 cash bonus and advances to the next rate tier ($20→$22→$25→$27→$30→$32→$35 max). Takes effect next pay period after score confirmed. Refund clause: no pay for first 3 sessions if student discontinues; +1 strike if Tutor's fault.</p>
       </PS>
       <PS title="07 — Performance Guarantee Obligation">
-        <p>If {ts.studentName || 'Student'} completes the full program without reaching {ts.targetScore || '—'} and triggers the performance guarantee, and Tutor remains with StudyCore, Tutor must continue delivering sessions until Student hits target. StudyCore pays Tutor at $20.00/hr for all guarantee sessions. No new contract required.</p>
+        <p>If {ts.studentName || 'Student'} triggers the guarantee and Tutor is still active, Tutor continues sessions at $20/hr until student hits {ts.targetScore || '—'}. No new contract required. <strong>Performance Review:</strong> Guarantee trigger automatically initiates a session report review. If tutor-side deficiencies are found (missed reports, poor quality, failure to meet obligations), Tutor receives 1 strike. Clean review = no consequence.</p>
       </PS>
       <PS title="08 — Incorporated Terms">
         <p>All terms of Tutor's General Tutor Services Agreement remain in full effect. This Assignment Agreement supplements, and does not replace, those terms.</p>

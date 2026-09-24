@@ -381,7 +381,7 @@ function TutorStudentContractText({ data, recipientName }) {
       <ContractSection title="06 — Performance Guarantee Obligation">
         <p>StudyCore guarantees students that if they complete the full program without reaching their target score, StudyCore continues working with them at no additional cost until the target is achieved.</p>
         <p>If {d.studentName || 'Student'} triggers this guarantee and Tutor remains actively engaged with StudyCore, Tutor is required to continue delivering sessions beyond the original program End Date until {d.studentName || 'Student'} achieves their target score of {d.targetScore || '—'}. StudyCore will compensate Tutor at the standard rate ($20.00/hour) for all guarantee-period sessions. This is a continuation of the current assignment — no new contract required.</p>
-        <p>If Tutor is no longer with StudyCore when the guarantee is triggered, this obligation does not apply.</p>
+        <p><strong>Performance Review:</strong> If the guarantee is triggered, StudyCore will review all session reports Tutor submitted for this assignment. If the review identifies tutor-side deficiencies (missed reports, poor session quality, failure to meet Section 04 obligations), Tutor receives 1 strike. If the review is clean, no consequence applies. This review may be conducted even if Tutor is no longer with StudyCore.</p>
       </ContractSection>
 
       <ContractSection title="07 — Relationship to General Agreement">
