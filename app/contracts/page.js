@@ -329,8 +329,10 @@ function TutorPreviewBody({ tutor }) {
   return (
     <div>
       <p>This Tutor Services Agreement is entered into as of <strong>{tutor.effectiveDate}</strong> by and between <strong>StudyCore LLC</strong> and <strong>{tutor.tutorName}</strong> ("Tutor").</p>
-      <PS title="01 — Independent Contractor"><p>Tutor is an independent contractor, not an employee. Tutor must have a verified SAT score of 1550 or higher.</p></PS>
-      <PS title="02 — Services & Obligations"><ul><li>Deliver all assigned sessions per schedule</li><li>Submit session reports after every session</li><li>Maintain professional communication with parents and StudyCore</li><li>Participate in weekly check-ins with Harshil Chilukuri</li><li>Lead office hours only when assigned by StudyCore</li></ul></PS>
+      <PS title="01 — Independent Contractor">
+        <p>Tutor is an independent contractor, not an employee. <strong>SAT Score Accuracy:</strong> Tutor warrants their SAT score is 1550+ and all info provided is truthful. Must provide proof upon request. Misrepresentation = immediate termination without pay.</p>
+      </PS>
+      <PS title="02 — Services & Obligations"><ul><li>Deliver all assigned sessions per schedule</li><li>Submit session reports after every session</li><li>Respond to all messages from StudyCore and parents within 24 hours</li><li>Conduct sessions with camera on via Zoom with Fathom recording</li><li>Participate in weekly check-ins with Harshil Chilukuri</li><li>Lead office hours only when assigned by StudyCore</li><li>Max 2 reschedules per student per month with 24hr notice — 3rd reschedule = 1 strike</li></ul></PS>
       <PS title="03 — Strike System"><ul><li><strong>1 Strike:</strong> 10+ minutes late to a session</li><li><strong>2 Strikes:</strong> Missing a session without notice (pay forfeited for that session)</li><li><strong>3 Strikes:</strong> Termination without pay for current pay period</li></ul></PS>
       <PS title="04 — Payment"><p>$20.00/hour · 15th and last day of each month via Zelle · Same rate for sessions and office hours. If a student refunds within their first 3 sessions, Tutor is not paid for those sessions. If the refund is Tutor's fault, Tutor receives an additional strike.</p></PS>
       <PS title="05 — Tax Responsibility"><p>Tutor is solely responsible for all taxes. StudyCore will issue a 1099-NEC for earnings of $600+.</p></PS>
@@ -398,10 +400,16 @@ function TutorStudentPreviewBody({ ts }) {
       <PS title="05 — Force Majeure Exception">
         <p>The early departure consequences in Section 04 do not apply in cases of documented medical emergency, family emergency, or other force majeure events, at StudyCore's sole discretion.</p>
       </PS>
-      <PS title="06 — Incorporated Terms">
+      <PS title="06 — Payment & Performance Bonus">
+        <p>$20.00/hour per General Agreement. <strong>Performance Bonus:</strong> Tutor receives $50.00 if {ts.studentName || 'Student'} hits their target score of {ts.targetScore || '—'} on their first official SAT after completing the program. Refund clause: no pay for first 3 sessions if student discontinues; +1 strike if Tutor's fault.</p>
+      </PS>
+      <PS title="07 — Performance Guarantee Obligation">
+        <p>If {ts.studentName || 'Student'} completes the full program without reaching {ts.targetScore || '—'} and triggers the performance guarantee, and Tutor remains with StudyCore, Tutor must continue delivering sessions until Student hits target. StudyCore pays Tutor at $20.00/hr for all guarantee sessions. No new contract required.</p>
+      </PS>
+      <PS title="08 — Incorporated Terms">
         <p>All terms of Tutor's General Tutor Services Agreement remain in full effect. This Assignment Agreement supplements, and does not replace, those terms.</p>
       </PS>
-      <PS title="07 — Dispute Resolution">
+      <PS title="09 — Dispute Resolution">
         <p>Governed by California law. Disputes via support@studycore.net, then binding arbitration in San Ramon, CA under AAA rules.</p>
       </PS>
 
@@ -448,7 +456,7 @@ function StudentPreviewBody({ student }) {
       </PS>
       <PS title="02 — Payment"><p><strong>Total:</strong> {fmt(student.totalInvestment)} · <strong>Structure:</strong> {student.paymentStructure}. No chargebacks except where StudyCore fails to deliver.</p></PS>
       <PS title="03 — Performance Guarantee"><p>If Student completes all {student.totalHours || '—'} sessions, stays Engaged, and doesn't reach {student.targetScore || '—'} by {student.targetTestDate || '—'}, StudyCore works with Student for free until the target is achieved.</p></PS>
-      <PS title="04 — Client Responsibilities"><ul><li>24+ hours notice to reschedule; max 2 reschedules/month</li><li>100% homework, drill, and practice test completion</li><li>Active engagement during all sessions</li></ul></PS>
+      <PS title="04 — Client Responsibilities"><ul><li>24+ hours notice to reschedule; max 2 reschedules/month — additional reschedules forfeit the session</li><li>100% homework, drill, and practice test completion (tracked via tutor session reports — Performance Guarantee void if below 100%)</li><li>Active engagement during all sessions</li><li><strong>SAT Registration:</strong> Register Student for {student.targetTestDate || 'the target SAT'} within 4 weeks of program start and send StudyCore confirmation. Failure to register voids the Performance Guarantee.</li></ul></PS>
       <PS title="05 — Cancellation"><p>Pause up to 2x per program (max 2 weeks each). Discontinuation: prorated refund based on sessions completed.</p></PS>
       <PS title="06 — Non-Solicitation / Recording / IP / Disputes"><p>No private solicitation of tutors for 12 months. Sessions recorded via Fathom. All materials are StudyCore IP. Disputes: arbitration in San Ramon, CA, California law.</p></PS>
 

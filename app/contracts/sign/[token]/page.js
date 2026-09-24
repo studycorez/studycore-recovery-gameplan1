@@ -248,17 +248,19 @@ function TutorContractText({ data, recipientName }) {
       )}
 
       <ContractSection title="01 — Independent Contractor Relationship">
-        <p>Tutor is an independent contractor, not an employee of StudyCore LLC. No employment relationship is created by this Agreement. Tutor is not entitled to employee benefits of any kind. Tutor must have a verified SAT score of 1550 or higher and will provide proof upon request.</p>
+        <p>Tutor is an independent contractor, not an employee of StudyCore LLC. No employment relationship is created by this Agreement. Tutor is not entitled to employee benefits of any kind.</p>
+        <p><strong>SAT Score Accuracy:</strong> Tutor represents and warrants that they have achieved a verified SAT score of 1550 or higher and that all information provided to StudyCore is accurate and truthful. Tutor must provide official proof of score upon request. Misrepresentation of score or qualifications is grounds for immediate termination without pay and may result in legal action.</p>
       </ContractSection>
       <ContractSection title="02 — Services & Obligations">
         <ul>
           <li>Deliver all assigned 1-on-1 sessions per each student's agreed schedule</li>
           <li>Lead office hours only when explicitly assigned by StudyCore</li>
           <li>Submit a written session report after every session</li>
-          <li>Maintain professional, timely communication with parents and the StudyCore team</li>
-          <li>Be available within the agreed-upon availability window close to session times</li>
+          <li>Respond to all messages from StudyCore and parents within 24 hours</li>
           <li>Monitor student progress proactively and report concerns immediately</li>
           <li>Participate in weekly check-ins with Harshil Chilukuri</li>
+          <li>Conduct all sessions with camera on, reliable internet, and via the platform designated by StudyCore (currently Zoom with Fathom recording)</li>
+          <li>Reschedule sessions with at least 24 hours notice. Maximum 2 reschedules per student per calendar month — a third reschedule in the same month counts as 1 strike.</li>
         </ul>
       </ContractSection>
       <ContractSection title="03 — Student Commitment">
@@ -371,14 +373,22 @@ function TutorStudentContractText({ data, recipientName }) {
       </ContractSection>
 
       <ContractSection title="05 — Payment for This Assignment">
-        <p>Compensation is governed by the General Tutor Services Agreement ($20.00/hour, paid on the 15th and last day of each month via Zelle). If the student discontinues within the first 3 sessions, Tutor will not receive payment for those sessions. If the discontinuation is due to Tutor's conduct, Tutor also receives one (1) strike.</p>
+        <p>Compensation is governed by the General Tutor Services Agreement ($20.00/hour, paid on the 15th and last day of each month via Zelle).</p>
+        <p><strong>Performance Bonus:</strong> If {d.studentName || 'Student'} achieves their target score of {d.targetScore || '—'} on the first official SAT taken after completing the program, Tutor will receive a one-time bonus of $50.00, paid in the following pay period.</p>
+        <p><strong>Refund Clause:</strong> If the student discontinues within the first 3 sessions, Tutor will not receive payment for those sessions. If the discontinuation is due to Tutor's conduct, Tutor also receives one (1) strike.</p>
       </ContractSection>
 
-      <ContractSection title="06 — Relationship to General Agreement">
+      <ContractSection title="06 — Performance Guarantee Obligation">
+        <p>StudyCore guarantees students that if they complete the full program without reaching their target score, StudyCore continues working with them at no additional cost until the target is achieved.</p>
+        <p>If {d.studentName || 'Student'} triggers this guarantee and Tutor remains actively engaged with StudyCore, Tutor is required to continue delivering sessions beyond the original program End Date until {d.studentName || 'Student'} achieves their target score of {d.targetScore || '—'}. StudyCore will compensate Tutor at the standard rate ($20.00/hour) for all guarantee-period sessions. This is a continuation of the current assignment — no new contract required.</p>
+        <p>If Tutor is no longer with StudyCore when the guarantee is triggered, this obligation does not apply.</p>
+      </ContractSection>
+
+      <ContractSection title="07 — Relationship to General Agreement">
         <p>This Assignment Agreement supplements, and does not replace, the General Tutor Services Agreement. In the event of conflict, the more restrictive provision applies. All other General Agreement terms remain in full force.</p>
       </ContractSection>
 
-      <ContractSection title="07 — Entire Assignment Agreement">
+      <ContractSection title="08 — Entire Assignment Agreement">
         <p>This document constitutes the entire agreement for this specific student assignment. Modifications must be in writing and signed by both parties.</p>
       </ContractSection>
     </div>
@@ -455,10 +465,11 @@ function StudentContractText({ data }) {
 
       <ContractSection title="07 — Client Responsibilities">
         <ul>
-          <li>24+ hours notice to reschedule; max 2 reschedules/month</li>
+          <li>24+ hours notice to reschedule; max 2 reschedules/month — additional reschedules forfeit the session</li>
           <li>Remain Engaged during all sessions</li>
-          <li>Complete 100% of assigned homework, practice tests, and drills</li>
+          <li>Complete 100% of assigned homework, practice tests, and drills. StudyCore tracks compliance via tutor session reports — Performance Guarantee is void if compliance falls below 100%.</li>
           <li>Complete practice tests independently under timed conditions</li>
+          <li><strong>SAT Registration:</strong> Register Student for the Target SAT Test ({d.targetTestDate || '—'}) within 4 weeks of program start and provide StudyCore with confirmation. Failure to register within this window voids the Performance Guarantee.</li>
           <li>Reliable internet and device for online sessions</li>
           <li>Keep payment method on file current</li>
         </ul>
