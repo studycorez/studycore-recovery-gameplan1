@@ -113,11 +113,7 @@ export default function SignContractPage() {
                 A signed copy has been saved on file with StudyCore. By signing electronically, you have agreed to all terms of the {contractTitle()} under the ESIGN Act.
               </p>
             </div>
-            {driveUrl && (
-              <a href={driveUrl} target="_blank" rel="noopener noreferrer" style={primaryBtn}>
-                View Signed Copy →
-              </a>
-            )}
+            <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>A copy has been sent to the StudyCore team at info@studycore.net.</p>
           </div>
         )}
 
