@@ -3,6 +3,77 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_FULL = { Mon: 'Mondays', Tue: 'Tuesdays', Wed: 'Wednesdays', Thu: 'Thursdays', Fri: 'Fridays', Sat: 'Saturdays', Sun: 'Sundays' };
+
+function formatTime12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function DayTimePicker({ onChange }) {
+  const [schedule, setSchedule] = useState({});
+
+  function toggleDay(day) {
+    setSchedule(prev => {
+      const next = { ...prev };
+      if (next[day] !== undefined) { delete next[day]; } else { next[day] = '17:00'; }
+      emitFormatted(next);
+      return next;
+    });
+  }
+
+  function setTime(day, time) {
+    setSchedule(prev => {
+      const next = { ...prev, [day]: time };
+      emitFormatted(next);
+      return next;
+    });
+  }
+
+  function emitFormatted(sched) {
+    const formatted = DAYS
+      .filter(d => sched[d] !== undefined)
+      .map(d => `${DAY_FULL[d]} at ${formatTime12(sched[d])} PT`)
+      .join(' · ');
+    onChange('sessionDaysTimes', formatted);
+  }
+
+  const selected = DAYS.filter(d => schedule[d] !== undefined);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: selected.length ? 14 : 0 }}>
+        {DAYS.map(day => (
+          <button key={day} type="button" onClick={() => toggleDay(day)} style={{
+            padding: '6px 14px', borderRadius: 6, border: '1.5px solid',
+            borderColor: schedule[day] !== undefined ? '#0f172a' : '#e2e8f0',
+            background: schedule[day] !== undefined ? '#0f172a' : '#fff',
+            color: schedule[day] !== undefined ? '#fff' : '#64748b',
+            fontWeight: '600', fontSize: 13, cursor: 'pointer',
+          }}>{day}</button>
+        ))}
+      </div>
+      {selected.map(day => (
+        <div key={day} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <span style={{ width: 40, fontSize: 13, fontWeight: '600', color: '#0f172a' }}>{day}</span>
+          <input type="time" value={schedule[day]} onChange={e => setTime(day, e.target.value)}
+            style={{ ...inp, width: 'auto', padding: '7px 10px' }} />
+          <span style={{ fontSize: 12, color: '#94a3b8' }}>{formatTime12(schedule[day])} PT</span>
+        </div>
+      ))}
+      {selected.length > 0 && (
+        <p style={{ fontSize: 12, color: '#64748b', marginTop: 8, marginBottom: 0 }}>
+          Will appear as: <em>{DAYS.filter(d => schedule[d] !== undefined).map(d => `${DAY_FULL[d]} at ${formatTime12(schedule[d])} PT`).join(' · ')}</em>
+        </p>
+      )}
+    </div>
+  );
+}
+
 const todayStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
 const TABS = [
@@ -23,7 +94,7 @@ export default function ContractsPage() {
     tutorName: '', tutorEmail: '', effectiveDate: todayStr,
     studentName: '', targetScore: '', programWeeks: '',
     sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '',
-    sessionDays: '', targetStartDate: '', targetEndDate: '',
+    sessionDaysTimes: '', targetStartDate: '', targetEndDate: '',
   });
 
   const [student, setStudent] = useState({
@@ -108,7 +179,7 @@ export default function ContractsPage() {
   function reset() {
     setStep('form'); setErrorMsg(''); setSentTo('');
     setTutor({ tutorName: '', tutorEmail: '', effectiveDate: todayStr });
-    setTutorStudent({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, studentName: '', targetScore: '', programWeeks: '', sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '', sessionDays: '', targetStartDate: '', targetEndDate: '' });
+    setTutorStudent({ tutorName: '', tutorEmail: '', effectiveDate: todayStr, studentName: '', targetScore: '', programWeeks: '', sessionsPerWeek: '1', sessionLengthHours: '1', totalHours: '', sessionDaysTimes: '', targetStartDate: '', targetEndDate: '' });
   }
 
   const canPreview = () => {
@@ -239,7 +310,7 @@ function TutorStudentForm({ ts, onChange }) {
         <Field label="Session Length (hrs)"><input style={inp} type="number" value={ts.sessionLengthHours} onChange={set('sessionLengthHours')} /></Field>
         <Field label="Total Hours"><input style={inp} type="number" value={ts.totalHours} onChange={set('totalHours')} /></Field>
         <Field label="Session Days / Times" style={{ gridColumn: '1 / -1' }}>
-          <input style={inp} value={ts.sessionDays} onChange={set('sessionDays')} placeholder="e.g. Tuesdays & Thursdays at 5:00 PM PT" />
+          <DayTimePicker onChange={onChange} />
         </Field>
         <Field label="Program Start Date"><input style={inp} value={ts.targetStartDate} onChange={set('targetStartDate')} placeholder="e.g. September 7, 2026" /></Field>
         <Field label="Program End Date"><input style={inp} value={ts.targetEndDate} onChange={set('targetEndDate')} placeholder="e.g. March 1, 2027" /></Field>
@@ -375,7 +446,7 @@ function TutorStudentPreviewBody({ ts }) {
           <tbody>
             {[['Student', ts.studentName], ['Target SAT Score', ts.targetScore], ['Program Duration', ts.programWeeks ? `${ts.programWeeks} weeks` : '—'],
               ['Sessions Per Week', ts.sessionsPerWeek], ['Session Length', ts.sessionLengthHours ? `${ts.sessionLengthHours} hr` : '—'],
-              ['Total Hours', ts.totalHours], ['Session Schedule', ts.sessionDays],
+              ['Total Hours', ts.totalHours], ['Session Schedule', ts.sessionDaysTimes],
               ['Program Start', ts.targetStartDate], ['Program End', ts.targetEndDate]].map(([l, v]) => (
               <tr key={l}><td style={{ fontWeight: 'bold', padding: '3px 12px 3px 0', width: 160 }}>{l}</td><td style={{ padding: '3px 0', color: '#475569' }}>{v || '—'}</td></tr>
             ))}
