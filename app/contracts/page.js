@@ -254,6 +254,8 @@ export default function ContractsPage() {
           targetScore: tutorStudent.targetScore ? Number(tutorStudent.targetScore) : null,
           programWeeks: tutorStudent.programWeeks ? Number(tutorStudent.programWeeks) : null,
           totalHours: tutorStudent.totalHours ? Number(tutorStudent.totalHours) : null,
+          startDate: tutorStudent.targetStartDate,
+          endDate: tutorStudent.targetEndDate,
         }};
     } else {
       payload = { type: 'student', recipientName: student.parentName, recipientEmail: student.parentEmail,

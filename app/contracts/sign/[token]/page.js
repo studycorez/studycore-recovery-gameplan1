@@ -332,8 +332,6 @@ function TutorStudentContractText({ data, recipientName }) {
               ['Student Name', d.studentName],
               ['Target SAT Score', d.targetScore],
               ['Program Duration', d.programWeeks ? `${d.programWeeks} weeks` : undefined],
-              ['Sessions Per Week', d.sessionsPerWeek],
-              ['Session Length', d.sessionLengthHours ? `${d.sessionLengthHours} hour(s)` : undefined],
               ['Total Hours', d.totalHours],
               ['Session Schedule', d.sessionDaysTimes],
               ['Start Date', d.startDate],
