@@ -375,14 +375,14 @@ function TutorStudentContractText({ data, recipientName }) {
 
       <ContractSection title="05 — Payment for This Assignment">
         <p>Compensation is governed by the General Tutor Services Agreement ($20.00/hour, paid on the 15th and last day of each month via Zelle).</p>
-        <p><strong>Performance Bonus & Rate Progression:</strong> The $200.00 is a fixed cost to StudyCore for this assignment. If {d.studentName || 'Student'} achieves their target score of {d.targetScore || '—'} on the first official SAT after completing the program, the $200.00 is paid to Tutor as a performance bonus and Tutor advances to the next rate tier ($20 → $22 → $25 → $27 → $30 → $32 → $35/hr max), taking effect the pay period following score confirmation. If the performance guarantee is triggered (see Section 06), the $200.00 is instead allocated to fund the guarantee session period and Tutor forfeits the bonus for this assignment.</p>
+        <p><strong>Performance Bonus & Rate Progression:</strong> If {d.studentName || 'Student'} achieves their target score of {d.targetScore || '—'} on the first official SAT after completing the program, Tutor will receive a one-time cash bonus of $200.00 and advance to the next rate tier ($20 → $22 → $25 → $27 → $30 → $32 → $35/hr max), taking effect the pay period following score confirmation. If the performance guarantee is triggered (see Section 06), Tutor forfeits the $200.00 bonus for this assignment.</p>
         <p><strong>Refund Clause:</strong> If the student discontinues within the first 3 sessions, Tutor will not receive payment for those sessions. If the discontinuation is due to Tutor's conduct, Tutor also receives one (1) strike.</p>
       </ContractSection>
 
       <ContractSection title="06 — Performance Guarantee Obligation">
         <p>StudyCore guarantees students that if they complete the full program without reaching their target score, StudyCore continues working with them at no additional cost until the target is achieved.</p>
-        <p>If {d.studentName || 'Student'} triggers this guarantee and Tutor remains actively engaged with StudyCore, Tutor is required to continue delivering sessions beyond the original program End Date. StudyCore will compensate Tutor at the standard rate ($20.00/hour) for guarantee-period sessions, funded by the $200.00 guarantee allocation described in Section 05. This is a continuation of the current assignment — no new contract required.</p>
-        <p><strong>Guarantee Session Cap:</strong> Tutor's guarantee obligation is capped at ten (10) additional sessions. After ten sessions have been delivered beyond the original program End Date, Tutor's obligation ends regardless of whether {d.studentName || 'Student'} has achieved their target score. StudyCore will determine next steps for the student independently.</p>
+        <p>If {d.studentName || 'Student'} triggers this guarantee and Tutor remains actively engaged with StudyCore, Tutor is required to continue delivering sessions beyond the original program End Date. StudyCore will compensate Tutor at the standard rate ($20.00/hour) for all guarantee-period sessions. This is a continuation of the current assignment — no new contract required.</p>
+        <p><strong>Duration of Guarantee Obligation:</strong> The length of Tutor's guarantee obligation is determined at StudyCore's sole discretion. StudyCore will notify Tutor in writing when the guarantee obligation has been fulfilled or concluded.</p>
         <p><strong>Performance Review:</strong> If the guarantee is triggered, StudyCore will review all session reports Tutor submitted for this assignment. If the review identifies tutor-side deficiencies (missed reports, poor session quality, failure to meet Section 04 obligations), Tutor receives 1 strike. If the review is clean, no consequence applies. This review may be conducted even if Tutor is no longer with StudyCore.</p>
       </ContractSection>
 
@@ -461,7 +461,7 @@ function StudentContractText({ data }) {
       </ContractSection>
 
       <ContractSection title="06 — Performance Guarantee">
-        <p>If Student completes all {d.totalHours || '—'} sessions, remains Engaged throughout the program, completes all assigned work, and does not achieve {d.targetScore || '—'}+ on the Target SAT Test ({d.targetTestDate || '—'}), StudyCore will continue working with Student at no additional cost until {d.targetScore || '—'}+ is achieved on a subsequent official SAT.</p>
+        <p>If Student completes all {d.totalHours || '—'} sessions, remains Engaged throughout the program, completes all assigned work, and does not achieve {d.targetScore || '—'}+ on the Target SAT Test ({d.targetTestDate || '—'}), StudyCore will continue working with Student at no additional cost — through up to <strong>ten (10) additional 1-on-1 sessions</strong> — until {d.targetScore || '—'}+ is achieved or the ten-session guarantee period has been completed, whichever comes first.</p>
         <p><strong>Eligibility requires:</strong> 100% session attendance, 100% homework/practice test completion, full compliance with Section 07.</p>
       </ContractSection>
 
