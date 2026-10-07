@@ -362,10 +362,10 @@ export default function GameplanGenerator() {
   }, [student.targetTestDate, student.programStartDate, weeksOverride]);
 
   // Load HighScores student list when switching to platform mode
-  useEffect(() => {
-    if (pullMode !== 'platform' || hsStudents.length > 0) return;
+  const loadHsStudents = () => {
     setHsLoading(true);
     setPlatformError('');
+    setHsStudents([]);
     fetch('/api/highscores-students')
       .then(r => r.json())
       .then(d => {
@@ -374,7 +374,12 @@ export default function GameplanGenerator() {
       })
       .catch(e => setPlatformError(e.message))
       .finally(() => setHsLoading(false));
-  }, [pullMode, hsStudents.length]);
+  };
+
+  useEffect(() => {
+    if (pullMode !== 'platform') return;
+    loadHsStudents();
+  }, [pullMode]);
 
   const handleStudentChange = e => {
     const { name, value } = e.target;
@@ -702,8 +707,16 @@ export default function GameplanGenerator() {
                       <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 5, color: '#222' }}>
                         Student Name <span style={{ color: RED }}>*</span>
                       </label>
-                      <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+                      <div style={{ fontSize: 11, color: '#888', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
                         {hsLoading ? 'Loading student list from platform…' : `${hsStudents.length} active students loaded · type to filter`}
+                        {!hsLoading && (
+                          <button
+                            onClick={() => { setSelectedStudent(null); setPlatformData(null); setStudentSearch(''); loadHsStudents(); }}
+                            style={{ fontSize: 10, color: BLUE, background: 'none', border: `1px solid ${BLUE}`, borderRadius: 3, cursor: 'pointer', padding: '1px 6px' }}
+                          >
+                            ↻ Refresh
+                          </button>
+                        )}
                       </div>
                       <input
                         value={studentSearch}
