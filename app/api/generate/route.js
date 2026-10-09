@@ -1,7 +1,8 @@
-import { computeProgram } from '../../../lib/routing-engine';
+import { computeProgram, computeGroupPlan } from '../../../lib/routing-engine';
 import { buildGameplanPdf } from '../../../lib/pdf-gameplan-new';
 import { buildInternalPlanPdf } from '../../../lib/pdf-internal-plan';
 import { buildStudentPlanPdf } from '../../../lib/pdf-student-plan';
+import { buildGroupPlanPdf } from '../../../lib/pdf-group-plan';
 import { createStudentTracker } from '../../../lib/google-sheets';
 import { generateGameplanNarratives } from '../../../lib/gameplan-rules';
 import { saveGameplan } from '../../../lib/db';
@@ -51,7 +52,47 @@ export async function POST(request) {
         catch { line(controller, { status: 'error', error: 'Invalid request body.' }); return; }
 
         let { studentData, diagnosticEntries: rawEntries, guaranteeMode } = body;
+        const planType = body.planType || 'standard';
         let diagnosticEntries = rawEntries;
+
+        // ── Group session plan: separate flow ───────────────────────────────────
+        if (planType === 'group') {
+          const groupMissing = [];
+          if (!studentData?.studentName) groupMissing.push('studentName');
+          if (!studentData?.baselineScore) groupMissing.push('baselineScore');
+          if (!studentData?.targetScore) groupMissing.push('targetScore');
+          if (!rawEntries || rawEntries.length === 0) groupMissing.push('diagnosticEntries');
+          if (groupMissing.length > 0) {
+            line(controller, { status: 'error', error: `Missing: ${groupMissing.join(', ')}` });
+            return;
+          }
+
+          line(controller, { status: 'generating', message: 'Computing assignment schedule…' });
+          const groupResult = computeGroupPlan(rawEntries, {
+            baselineScore:    parseInt(studentData.baselineScore, 10),
+            targetScore:      parseInt(studentData.targetScore, 10),
+            targetTestDate:   studentData.targetTestDate || null,
+            programStartDate: studentData.programStartDate || null,
+          });
+
+          line(controller, { status: 'building', message: 'Building assignment schedule PDF…' });
+          let groupBuffer;
+          try {
+            groupBuffer = await buildGroupPlanPdf(studentData, groupResult);
+          } catch (err) {
+            line(controller, { status: 'error', error: `PDF build error: ${err.message}` });
+            return;
+          }
+
+          line(controller, {
+            status: 'done',
+            planType: 'group',
+            groupPlanBase64: Buffer.from(groupBuffer).toString('base64'),
+            studentName: studentData.studentName,
+            programSummary: groupResult.programSummary,
+          });
+          return;
+        }
 
         const missing = [];
         if (!studentData?.studentName) missing.push('studentName');

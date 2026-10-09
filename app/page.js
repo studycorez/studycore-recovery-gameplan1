@@ -377,9 +377,9 @@ export default function GameplanGenerator() {
   };
 
   useEffect(() => {
-    if (pullMode !== 'platform') return;
+    if (pullMode !== 'platform' && mode !== 'group') return;
     loadHsStudents();
-  }, [pullMode]);
+  }, [pullMode, mode]);
 
   const handleStudentChange = e => {
     const { name, value } = e.target;
@@ -514,10 +514,11 @@ export default function GameplanGenerator() {
           },
           diagnosticEntries: mode === 'guarantee'
             ? null
-            : (mode === 'new' && pullMode === 'platform')
+            : (mode === 'group' || (mode === 'new' && pullMode === 'platform'))
               ? platformData?.diagnosticEntries
               : parsed?.diagnosticEntries,
           guaranteeMode: mode === 'guarantee',
+          planType: mode === 'group' ? 'group' : 'standard',
         }),
       });
 
@@ -550,15 +551,25 @@ export default function GameplanGenerator() {
             } else if (event.status === 'generating' || event.status === 'building' || event.status === 'routing_complete' || event.status === 'saving') {
               setProgressMsgs(prev => [...prev, event.message]);
             } else if (event.status === 'done') {
-              downloadFile(event.gameplanBase64, `${event.studentName}_Gameplan.pdf`);
-              setResult({
-                trackerUrl:         event.trackerUrl,
-                programSummary:     event.programSummary,
-                pdfBase64:          event.gameplanBase64,
-                internalPlanBase64: event.internalPlanBase64,
-                studentPlanBase64:  event.studentPlanBase64,
-                studentName:        event.studentName,
-              });
+              if (event.planType === 'group') {
+                downloadFile(event.groupPlanBase64, `${event.studentName}_Assignment_Schedule.pdf`);
+                setResult({
+                  planType:        'group',
+                  programSummary:  event.programSummary,
+                  groupPlanBase64: event.groupPlanBase64,
+                  studentName:     event.studentName,
+                });
+              } else {
+                downloadFile(event.gameplanBase64, `${event.studentName}_Gameplan.pdf`);
+                setResult({
+                  trackerUrl:         event.trackerUrl,
+                  programSummary:     event.programSummary,
+                  pdfBase64:          event.gameplanBase64,
+                  internalPlanBase64: event.internalPlanBase64,
+                  studentPlanBase64:  event.studentPlanBase64,
+                  studentName:        event.studentName,
+                });
+              }
               setProgressMsgs(prev => [...prev, 'Done!']);
               setGenerating(false);
             }
@@ -575,8 +586,10 @@ export default function GameplanGenerator() {
 
   const canAdvanceStep1 = mode === 'guarantee'
     ? (guaranteeParsed && !guaranteeParsing)
+    : mode === 'group' ? (platformData !== null)
     : (pullMode === 'platform' ? (platformData !== null) : (parsed && !parsing));
-  const canAdvanceStep2 = student.studentName.trim() && student.baselineScore && student.targetScore;
+  const canAdvanceStep2Group = mode === 'group' && !!student.studentName && !!student.baselineScore && !!student.targetScore;
+  const canAdvanceStep2 = canAdvanceStep2Group || (student.studentName.trim() && student.baselineScore && student.targetScore);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -618,6 +631,7 @@ export default function GameplanGenerator() {
         <div style={{ display: 'flex', gap: 0, marginBottom: 16, border: `1px solid ${BORDER}`, borderRadius: 6, overflow: 'hidden' }}>
           {[
             { key: 'new', label: 'New Student', icon: '📋' },
+            { key: 'group', label: 'Group Session', icon: '👥' },
             { key: 'guarantee', label: 'Guarantee Recovery', icon: '🔄' },
           ].map(m => (
             <button key={m.key} onClick={() => { setMode(m.key); setStep(1); setParsed(null); setGuaranteeParsed(null); setResult(null); }}
@@ -789,6 +803,80 @@ export default function GameplanGenerator() {
               </>
             )}
 
+            {mode === 'group' && (
+              <>
+                <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
+                  Group Session — Assignment Schedule
+                </div>
+                <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>
+                  Pull the student's diagnostic data from HighScores to generate a personalised weekly assignment schedule.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 5, color: '#222' }}>
+                      Student Name <span style={{ color: RED }}>*</span>
+                    </label>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {hsLoading ? 'Loading student list from platform…' : `${hsStudents.length} active students loaded · type to filter`}
+                      {!hsLoading && (
+                        <button
+                          onClick={() => { setSelectedStudent(null); setPlatformData(null); setStudentSearch(''); loadHsStudents(); }}
+                          style={{ fontSize: 10, color: BLUE, background: 'none', border: `1px solid ${BLUE}`, borderRadius: 3, cursor: 'pointer', padding: '1px 6px' }}
+                        >
+                          ↻ Refresh
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      value={studentSearch}
+                      onChange={e => { setStudentSearch(e.target.value); setSelectedStudent(null); setPlatformData(null); }}
+                      placeholder="Type student name…"
+                      style={{ ...inp }}
+                      disabled={hsLoading}
+                    />
+                  </div>
+                  {!hsLoading && studentSearch.trim() && hsFiltered.length > 0 && !selectedStudent && (
+                    <div style={{ border: `1px solid ${BORDER}`, borderRadius: 4, overflow: 'hidden' }}>
+                      {hsFiltered.map(s => (
+                        <div key={s.id} onClick={() => handleSelectHsStudent(s)}
+                          style={{ padding: '8px 12px', cursor: 'pointer', backgroundColor: 'white', borderBottom: `1px solid ${BORDER}`, fontSize: 13, color: '#222' }}>
+                          {s.name}
+                          <span style={{ color: '#888', marginLeft: 8, fontSize: 11 }}>{s.topicAccuracy.length} topics</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!hsLoading && studentSearch.trim() && hsFiltered.length === 0 && !selectedStudent && (
+                    <div style={{ fontSize: 12, color: '#888' }}>No students found matching "{studentSearch}"</div>
+                  )}
+                  {platformError && (
+                    <div style={{ padding: '10px 12px', backgroundColor: '#FDEDEC', border: `1px solid ${RED}`, borderRadius: 4, color: RED, fontSize: 13 }}>
+                      {platformError}
+                    </div>
+                  )}
+                  {platformData && selectedStudent && (
+                    <div style={{ padding: '12px 14px', backgroundColor: '#EAFAF1', border: `1px solid ${GREEN}`, borderRadius: 4 }}>
+                      <div style={{ fontWeight: 700, color: GREEN, fontSize: 13, marginBottom: 4 }}>
+                        {selectedStudent.name} — data loaded
+                      </div>
+                      <div style={{ fontSize: 12, color: '#444' }}>
+                        {platformData.topicCount} topics pulled from platform
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ marginTop: 20, textAlign: 'right' }}>
+                  <button
+                    style={btn(NAVY, !canAdvanceStep1)}
+                    disabled={!canAdvanceStep1}
+                    onClick={() => setStep(2)}
+                  >
+                    Next: Program Details →
+                  </button>
+                </div>
+              </>
+            )}
+
             {mode === 'guarantee' && (
               <>
                 <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
@@ -948,6 +1036,49 @@ export default function GameplanGenerator() {
         {/* ── STEP 2: Program Details ─────────────────────────────────── */}
         {step === 2 && (
           <Card>
+            {mode === 'group' && (
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: NAVY, marginBottom: 16 }}>Assignment Schedule Details</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <Field label="Student Name" hint="Pre-filled from platform">
+                    <input name="studentName" value={student.studentName} onChange={handleStudentChange} style={inp} placeholder="Student Name" />
+                  </Field>
+                  <Field label="Baseline Score" hint="Total SAT score from diagnostic">
+                    <input type="number" name="baselineScore" value={student.baselineScore} onChange={handleStudentChange} style={inp} placeholder="e.g. 1100" min="400" max="1600" />
+                  </Field>
+                  <Field label="Target Score">
+                    <input type="number" name="targetScore" value={student.targetScore} onChange={handleStudentChange} style={inp} placeholder="e.g. 1400" min="400" max="1600" />
+                  </Field>
+                  <Field label="R&W Score" hint="Optional">
+                    <input type="number" name="rwScore" value={student.rwScore} onChange={handleStudentChange} style={inp} placeholder="e.g. 550" />
+                  </Field>
+                  <Field label="Math Score" hint="Optional">
+                    <input type="number" name="mathScore" value={student.mathScore} onChange={handleStudentChange} style={inp} placeholder="e.g. 550" />
+                  </Field>
+                  <Field label="Program Start Date" hint="Used to calculate week dates in PDF">
+                    <input type="date" name="programStartDate" value={student.programStartDate} onChange={handleStudentChange} style={inp} />
+                  </Field>
+                </div>
+                <Field label="SAT Test Date" hint="Pre-filled from their existing plan if available">
+                  <select
+                    name="targetTestDate"
+                    value={student.targetTestDate}
+                    onChange={handleStudentChange}
+                    style={inp}
+                  >
+                    <option value="">Select test date…</option>
+                    {SAT_PSAT_DATES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                  </select>
+                  <input
+                    type="date" name="targetTestDate" value={student.targetTestDate}
+                    onChange={handleStudentChange}
+                    style={{ ...inp, marginTop: 6 }}
+                    placeholder="Or enter custom date"
+                  />
+                </Field>
+              </div>
+            )}
+            {mode !== 'group' && (<>
             <div style={{ fontWeight: 700, fontSize: 18, color: NAVY, marginBottom: 4 }}>
               Program Details
             </div>
@@ -1306,6 +1437,7 @@ export default function GameplanGenerator() {
                 <textarea name="programNotes" value={student.programNotes} onChange={handleStudentChange} style={{ ...inp, minHeight: 70, resize: 'vertical' }} placeholder="Any relevant context about the student or situation" />
               </Field>
             </div>
+            </>)}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'space-between' }}>
               <button style={btn('#888', false)} onClick={() => setStep(1)}>← Back</button>
@@ -1351,9 +1483,11 @@ export default function GameplanGenerator() {
               <div style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
                 {mode === 'guarantee'
                   ? `Guarantee recovery — domain bands inferred from score report${guaranteeParsed?.portal?.topicsCovered?.length ? ` · ${guaranteeParsed.portal.topicsCovered.length} topics covered` : ''}`
-                  : (pullMode === 'platform' && platformData)
-                    ? `${platformData.topicCount} topics pulled from platform`
-                    : `${parsed?.diagnosticEntries?.length || 0} diagnostic topics parsed from PDF`}
+                  : mode === 'group'
+                    ? `Group session plan · ${platformData?.topicCount || 0} topics pulled from platform`
+                    : (pullMode === 'platform' && platformData)
+                      ? `${platformData.topicCount} topics pulled from platform`
+                      : `${parsed?.diagnosticEntries?.length || 0} diagnostic topics parsed from PDF`}
               </div>
             </div>
 
@@ -1361,12 +1495,14 @@ export default function GameplanGenerator() {
             {!result && !generating && (
               <div style={{ padding: '12px 16px', backgroundColor: '#EAFAF1', borderRadius: 4, fontSize: 13, marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, color: GREEN, marginBottom: 8 }}>What this generates:</div>
-                {[
+                {(mode === 'group' ? [
+                  { name: 'Assignment Schedule PDF', desc: 'Week-by-week HighScores module assignments ranked by diagnostic gaps, with practice test checkpoints' },
+                ] : [
                   { name: 'Tutor Gameplan PDF', desc: 'Topic sequence, 5-phase session plan, Notion lesson links, tutor guidance, checkpoint triggers' },
                   { name: 'Internal Brief PDF', desc: 'Pricing, guarantee status, paid/free session breakdown, topic table — for the team' },
                   { name: 'Student Plan PDF', desc: 'Plain-language program overview for the family — no jargon, homework guide, checkpoint explainers' },
                   { name: 'Mastery Tracker', desc: 'Google Sheet with student\'s topic sequence pre-filled (requires Google credentials)' },
-                ].map((item, i) => (
+                ]).map((item, i) => (
                   <div key={i} style={{ color: '#333', marginBottom: 5, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                     <span style={{ color: GREEN, fontWeight: 700, minWidth: 12 }}>✓</span>
                     <span><strong>{item.name}</strong> — {item.desc}</span>
@@ -1386,7 +1522,40 @@ export default function GameplanGenerator() {
             )}
 
             {/* Result */}
-            {result && (
+            {result && result.planType === 'group' && (
+              <div style={{ marginTop: 12, padding: '16px', backgroundColor: '#EAFAF1', border: `1px solid ${GREEN}`, borderRadius: 6 }}>
+                <div style={{ fontWeight: 700, color: GREEN, marginBottom: 10, fontSize: 15 }}>
+                  Assignment Schedule generated!
+                </div>
+                <div style={{ fontSize: 13, color: '#333', marginBottom: 12 }}>
+                  PDF downloaded automatically.
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                  <button
+                    onClick={() => downloadFile(result.groupPlanBase64, `${result.studentName}_Assignment_Schedule.pdf`)}
+                    style={{ ...btn(NAVY, false), padding: '9px 16px', fontSize: 12 }}
+                  >
+                    Download Assignment Schedule
+                  </button>
+                </div>
+                {result.programSummary && (
+                  <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                    {[
+                      { label: 'Topics',         value: result.programSummary.topicsToTeach },
+                      { label: 'Weeks',          value: result.programSummary.weeksUntilTest },
+                      { label: 'Practice Tests', value: result.programSummary.practiceTestCount },
+                      { label: 'Feasibility',    value: result.programSummary.feasibility },
+                    ].map((c, i) => (
+                      <div key={i} style={{ backgroundColor: 'white', border: `1px solid ${BORDER}`, borderRadius: 4, padding: '8px 10px' }}>
+                        <div style={{ fontSize: 10, color: '#888', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>{c.label}</div>
+                        <div style={{ fontWeight: 700, color: NAVY, fontSize: 14 }}>{c.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {result && result.planType !== 'group' && (
               <div style={{ marginTop: 12, padding: '16px', backgroundColor: '#EAFAF1', border: `1px solid ${GREEN}`, borderRadius: 6 }}>
                 <div style={{ fontWeight: 700, color: GREEN, marginBottom: 10, fontSize: 15 }}>
                   Gameplan generated!
@@ -1460,7 +1629,7 @@ export default function GameplanGenerator() {
                 disabled={generating}
                 onClick={handleGenerate}
               >
-                {generating ? 'Generating…' : result ? 'Regenerate' : 'Generate Gameplan + Tracker'}
+                {generating ? 'Generating…' : result ? 'Regenerate' : mode === 'group' ? 'Generate Assignment Schedule' : 'Generate Gameplan + Tracker'}
               </button>
             </div>
           </Card>
