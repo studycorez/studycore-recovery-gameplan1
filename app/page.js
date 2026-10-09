@@ -809,7 +809,7 @@ export default function GameplanGenerator() {
                   Group Session — Assignment Schedule
                 </div>
                 <div style={{ fontSize: 13, color: '#555', marginBottom: 16 }}>
-                  Pull the student's diagnostic data from HighScores to generate a personalised weekly assignment schedule.
+                  Pull the student's diagnostic data from the StudyCore platform to generate a personalised weekly assignment schedule.
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
@@ -1496,7 +1496,7 @@ export default function GameplanGenerator() {
               <div style={{ padding: '12px 16px', backgroundColor: '#EAFAF1', borderRadius: 4, fontSize: 13, marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, color: GREEN, marginBottom: 8 }}>What this generates:</div>
                 {(mode === 'group' ? [
-                  { name: 'Assignment Schedule PDF', desc: 'Week-by-week HighScores module assignments ranked by diagnostic gaps, with practice test checkpoints' },
+                  { name: 'Assignment Schedule PDF', desc: 'Week-by-week StudyCore platform assignments ranked by diagnostic gaps, with practice test checkpoints' },
                 ] : [
                   { name: 'Tutor Gameplan PDF', desc: 'Topic sequence, 5-phase session plan, Notion lesson links, tutor guidance, checkpoint triggers' },
                   { name: 'Internal Brief PDF', desc: 'Pricing, guarantee status, paid/free session breakdown, topic table — for the team' },
